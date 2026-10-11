@@ -116,14 +116,16 @@ continue or a new stop. A second class-valued hop is omitted, so recursion,
 cycles, inherited/generated fields, collections, and general object traversal
 remain unsupported. `debugNestedClass` is true only for this depth-one contract.
 
-The independently versioned `sagan-dap-array-view-v1` slice expands initialized
-local constant `Array<Bool>`, `Array<numeric>`, and `Array<String>` values into
+The independently versioned `sagan-dap-array-view-v2` slice expands initialized
+local `Array<Bool>`, `Array<numeric>`, and `Array<String>` values into
 zero-based indexed children. Debug builds emit a Sagan-owned snapshot with an
 explicit element pointer and count; DAP never reads private standard-library
-layout or calls into the debuggee. Requests may page with `start` and `count`,
+layout or calls into the debuggee. Mutable local snapshots are synchronized
+after whole, indexed, compound, value-producing, parallel, and increment or
+decrement mutations emitted by the compiler. Requests may page with `start` and `count`,
 out-of-bounds starts fail, and arrays over 256 elements fail closed. References
-are valid only for the current stop. Mutable arrays, nested collections, class
-elements, mutation, index evaluation, optimized storage, and general collection
+are valid only for the current stop. Root/parameter arrays, nested collections,
+class elements, index evaluation, optimized storage, and general collection
 semantics remain unsupported. `debugArrayView` is true only for this contract;
 `debugVariables` and `debugEvaluate` remain false.
 

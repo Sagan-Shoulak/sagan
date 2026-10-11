@@ -46,6 +46,7 @@ namespace codegen
       std::vector<std::string> active_return_types;
       std::vector<std::unordered_set<std::string>> boxed_scopes;
       std::vector<std::unordered_set<std::string>> unboxed_scopes;
+      std::vector<std::unordered_set<std::string>> debug_array_scopes;
       std::unordered_set<std::string> initializer_parameters;
       bool in_parent_initializer = false;
       bool in_method = false;
@@ -101,10 +102,22 @@ namespace codegen
         return {reinterpret_cast<const char *>(encoded.data()), encoded.size()};
       }
 
-      auto open_boxed_scope() -> void { boxed_scopes.emplace_back(); unboxed_scopes.emplace_back(); }
-      auto close_boxed_scope() -> void { boxed_scopes.pop_back(); unboxed_scopes.pop_back(); }
+      auto open_boxed_scope() -> void
+      { boxed_scopes.emplace_back(); unboxed_scopes.emplace_back(); debug_array_scopes.emplace_back(); }
+      auto close_boxed_scope() -> void
+      { boxed_scopes.pop_back(); unboxed_scopes.pop_back(); debug_array_scopes.pop_back(); }
       auto box(const std::string &name) -> void { boxed_scopes.back().insert(name); }
       auto unbox(const std::string &name) -> void { unboxed_scopes.back().insert(name); }
+      auto debug_array(const std::string &name) -> void { debug_array_scopes.back().insert(name); }
+
+      auto has_debug_array(const std::string &name) const -> bool
+      {
+        std::optional<std::size_t> declaration;
+        for (std::size_t index = boxed_scopes.size(); index > 0; --index)
+          if (boxed_scopes[index - 1].contains(name) || unboxed_scopes[index - 1].contains(name))
+          { declaration = index - 1; break; }
+        return declaration && debug_array_scopes[*declaration].contains(name);
+      }
       auto boxed(const std::string &name) const -> bool
       {
         for (std::size_t index = boxed_scopes.size(); index > 0; --index)
@@ -520,6 +533,33 @@ namespace codegen
         return expression(value);
       }
 
+      auto debug_array_root(const parser::expression &value) const -> std::optional<std::string>
+      {
+        if (const auto *identifier_value = dynamic_cast<const parser::identifier_expression *>(&value))
+          return has_debug_array(identifier_value->name)
+                     ? std::optional<std::string>{identifier_value->name} : std::nullopt;
+        if (const auto *group = dynamic_cast<const parser::grouping_expression *>(&value))
+          return debug_array_root(*group->value);
+        if (const auto *index = dynamic_cast<const parser::index_expression *>(&value))
+          return debug_array_root(*index->target);
+        return {};
+      }
+
+      auto debug_array_refresh(const std::string &name) const -> std::string
+      {
+        return "SAGAN_DEBUG_ARRAY_REFRESH(" + generated_debug_array_identifier(name) + ", *(" +
+               identifier(name) + "))";
+      }
+
+      auto scalar_array_element(const std::string &type) const -> std::optional<std::string>
+      {
+        if (!type.starts_with("Array<") || !type.ends_with('>')) return {};
+        const auto element = type.substr(6, type.size() - 7);
+        if (element == "Bool" || element == "String" || element.starts_with("Int") ||
+            element.starts_with("UInt") || element.starts_with("Float")) return element;
+        return {};
+      }
+
       auto dictionary_components(const std::string_view checked,
                                  const parser::span range) const -> std::pair<std::string, std::string>
       {
@@ -639,9 +679,17 @@ namespace codegen
         {
           if (unary->operator_text == "++" || unary->operator_text == "--")
           {
-            return "sagan_" + std::string(unary->operator_text == "++" ? "increment" : "decrement") + "<" +
-                   type_name(expression_type(value), value.range) + ">(" + expression(*unary->operand) + ", " +
-                   (unary->postfix ? "true" : "false") + ")";
+            const std::string mutation = "sagan_" +
+                std::string(unary->operator_text == "++" ? "increment" : "decrement") + "<" +
+                type_name(expression_type(value), value.range) + ">(" + expression(*unary->operand) + ", " +
+                (unary->postfix ? "true" : "false") + ")";
+            if (const auto root = debug_array_root(*unary->operand))
+            {
+              const std::string temporary = "sagan_debug_mutation_" + std::to_string(temporary_index++);
+              return "([&]() { auto " + temporary + " = " + mutation + "; " +
+                     debug_array_refresh(*root) + "; return " + temporary + "; }())";
+            }
+            return mutation;
           }
           if (unary->postfix) fail("unsupported postfix operator", value.range);
           const std::string op = unary->operator_text == "not" ? "!" : unary->operator_text;
@@ -715,8 +763,17 @@ namespace codegen
                  converted_expression(*conditional->when_true, expression_type(value)) + " : " +
                  converted_expression(*conditional->when_false, expression_type(value)) + ")";
         if (const auto *assignment = dynamic_cast<const parser::assignment_expression *>(&value))
-          return "(" + assignable(*assignment->target) + " = " +
-                 converted_expression(*assignment->value, expression_type(value)) + ")";
+        {
+          const std::string converted = converted_expression(*assignment->value, expression_type(value));
+          if (const auto root = debug_array_root(*assignment->target))
+          {
+            const std::string temporary = "sagan_debug_assignment_" + std::to_string(temporary_index++);
+            return "([&]() { auto " + temporary + " = " + converted + "; " +
+                   assignable(*assignment->target) + " = " + temporary + "; " +
+                   debug_array_refresh(*root) + "; return " + temporary + "; }())";
+          }
+          return "(" + assignable(*assignment->target) + " = " + converted + ")";
+        }
         if (const auto *call = dynamic_cast<const parser::call_expression *>(&value))
         {
           if (const auto *method = dynamic_cast<const parser::member_expression *>(call->callee.get()))
@@ -1140,15 +1197,13 @@ namespace codegen
             unbox(declaration->name);
             output << "const " << type_name(checked_type, declaration->range) << ' '
                    << identifier(declaration->name) << " = " << initializer << ";\n";
-            if (checked_type.starts_with("Array<") && checked_type.ends_with('>'))
+            if (const auto element = scalar_array_element(checked_type))
             {
-              const auto element = checked_type.substr(6, checked_type.size() - 7);
-              if (element == "Bool" || element == "String" || element.starts_with("Int") ||
-                  element.starts_with("UInt") || element.starts_with("Float"))
-                output << indentation() << "#ifdef SAGAN_DEBUG_ARRAY_VIEW\n" << indentation()
-                       << "sagan_debug_array_view<" << type_name(element, declaration->range) << "> "
-                       << generated_debug_array_identifier(declaration->name) << '('
-                       << identifier(declaration->name) << ");\n" << indentation() << "#endif\n";
+              output << indentation() << "#ifdef SAGAN_DEBUG_ARRAY_VIEW\n" << indentation()
+                     << "sagan_debug_array_view<" << type_name(*element, declaration->range) << "> "
+                     << generated_debug_array_identifier(declaration->name) << '('
+                     << identifier(declaration->name) << ");\n" << indentation() << "#endif\n";
+              debug_array(declaration->name);
             }
           }
           else
@@ -1158,6 +1213,14 @@ namespace codegen
                    << type_name(checked_type, declaration->range) << ">(";
             if (!initializer.empty()) output << initializer;
             output << ");\n";
+            if (const auto element = scalar_array_element(checked_type))
+            {
+              output << indentation() << "#ifdef SAGAN_DEBUG_ARRAY_VIEW\n" << indentation()
+                     << "sagan_debug_array_view<" << type_name(*element, declaration->range) << "> "
+                     << generated_debug_array_identifier(declaration->name) << "(*"
+                     << identifier(declaration->name) << ");\n" << indentation() << "#endif\n";
+              debug_array(declaration->name);
+            }
           }
         }
         else if (const auto *declaration = dynamic_cast<const parser::parallel_let_declaration *>(&value))
@@ -1180,12 +1243,21 @@ namespace codegen
             box(entry.name);
             output << indentation() << "auto " << identifier(entry.name) << " = std::make_shared<"
                    << type_name(checked_type, entry.name_range) << ">(" << snapshots[index] << ");\n";
+            if (const auto element = scalar_array_element(checked_type))
+            {
+              output << indentation() << "#ifdef SAGAN_DEBUG_ARRAY_VIEW\n" << indentation()
+                     << "sagan_debug_array_view<" << type_name(*element, entry.name_range) << "> "
+                     << generated_debug_array_identifier(entry.name) << "(*" << identifier(entry.name)
+                     << ");\n" << indentation() << "#endif\n";
+              debug_array(entry.name);
+            }
           }
         }
         else if (const auto *expression_value = dynamic_cast<const parser::expression_statement *>(&value))
           output << expression(*expression_value->value) << ";\n";
         else if (const auto *assignment = dynamic_cast<const parser::assignment_statement *>(&value))
         {
+          const auto refresh = debug_array_root(*assignment->target);
           if (assignment->operation == "^=")
             output << "sagan_power_assign<" << type_name(expression_type(*assignment->target), assignment->range)
                    << ">(" << expression(*assignment->target) << ", " << expression(*assignment->value) << ");\n";
@@ -1205,6 +1277,7 @@ namespace codegen
           else
             output << assignable(*assignment->target) << ' ' << assignment->operation << ' '
                    << converted_expression(*assignment->value, expression_type(*assignment->target)) << ";\n";
+          if (refresh) output << indentation() << debug_array_refresh(*refresh) << ";\n";
         }
         else if (const auto *parallel = dynamic_cast<const parser::parallel_assignment_statement *>(&value))
         {
@@ -1222,6 +1295,10 @@ namespace codegen
             output << assignable(*parallel->targets[index]) << " = " << snapshots[index] << ";\n";
             if (index + 1 < parallel->targets.size()) output << indentation();
           }
+          std::unordered_set<std::string> refreshed;
+          for (const auto &target : parallel->targets)
+            if (const auto root = debug_array_root(*target); root && refreshed.insert(*root).second)
+              output << indentation() << debug_array_refresh(*root) << ";\n";
         }
         else if (const auto *conditional = dynamic_cast<const parser::if_statement *>(&value))
         {
@@ -2090,12 +2167,24 @@ namespace codegen
                   "  std::size_t count{};\n"
                   "  T *data{};\n"
                   "  explicit sagan_debug_array_view(const std::vector<T> &values)\n"
-                  "      : count(values.size()), data(count == 0 || count > 256 ? nullptr : new T[count])\n"
-                  "  { if (data) for (std::size_t index = 0; index < count; ++index) data[index] = values[index]; }\n"
+                  "  { refresh(values); }\n"
+                  "  auto refresh(const std::vector<T> &values) -> void\n"
+                  "  {\n"
+                  "    const std::size_t next_count = values.size();\n"
+                  "    std::unique_ptr<T[]> next = next_count == 0 || next_count > 256\n"
+                  "        ? nullptr : std::make_unique<T[]>(next_count);\n"
+                  "    if (next) for (std::size_t index = 0; index < next_count; ++index) next[index] = values[index];\n"
+                  "    delete[] data;\n"
+                  "    count = next_count;\n"
+                  "    data = next.release();\n"
+                  "  }\n"
                   "  sagan_debug_array_view(const sagan_debug_array_view &) = delete;\n"
                   "  auto operator=(const sagan_debug_array_view &) -> sagan_debug_array_view & = delete;\n"
                   "  ~sagan_debug_array_view() { delete[] data; }\n"
                   "};\n"
+                  "#define SAGAN_DEBUG_ARRAY_REFRESH(view, values) (view).refresh(values)\n"
+                  "#else\n"
+                  "#define SAGAN_DEBUG_ARRAY_REFRESH(view, values) ((void)0)\n"
                   "#endif\n\n"
                   "void sagan_initialize_runtime()\n"
                   "{\n"

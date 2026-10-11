@@ -71,7 +71,7 @@ auto main() -> int
               initialized.get("experimental")->get("compiler")->get("debugNestedClassSchema")
                   ->string() == "sagan-dap-nested-class-v1" &&
               initialized.get("experimental")->get("compiler")->get("debugArrayViewSchema")
-                  ->string() == "sagan-dap-array-view-v1" &&
+                  ->string() == "sagan-dap-array-view-v2" &&
               initialized.get("experimental")->get("compiler")->get("capabilities")
                   ->get("packageCompletion")->boolean() == true &&
               initialized.get("experimental")->get("compiler")->get("capabilities")

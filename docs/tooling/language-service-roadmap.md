@@ -238,7 +238,9 @@ The granular `debugNestedClass` slice adds one class-valued child expansion;
 recursive object graphs remain a future gate. The granular `debugArrayView`
 slice adds bounded, paged inspection of initialized constant arrays containing
 only Bool, numeric, or String values through a compiler-generated debug-only
-snapshot. Mutable and nested collections remain future gates.
+snapshot. Version 2 synchronizes the same view for mutable locals after all
+compiler-visible mutations. Root/parameter arrays and nested collections remain
+future gates.
 
 ## Phase 8 — Language Server Protocol transport
 

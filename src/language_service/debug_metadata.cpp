@@ -134,7 +134,8 @@ namespace sagan::language_service
                                     range_for(id_for(path), lifetime), path,
                                     symbol.kind == semantic::symbol_kind::parameter,
                                     representation, false});
-        if (symbol.kind == semantic::symbol_kind::constant && symbol.scope_id != 0 &&
+        if ((symbol.kind == semantic::symbol_kind::constant ||
+             symbol.kind == semantic::symbol_kind::variable) && symbol.scope_id != 0 &&
             type.starts_with("Array<") &&
             type.ends_with('>'))
         {
