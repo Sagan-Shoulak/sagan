@@ -40,6 +40,17 @@
 
 namespace sagan::dap
 {
+  auto read_runtime_diagnostics(const std::filesystem::path &path,
+                                const std::size_t limit) -> std::string
+  {
+    std::ifstream diagnostics(path, std::ios::binary);
+    if (!diagnostics || limit == 0) return {};
+    std::string captured(limit, '\0');
+    diagnostics.read(captured.data(), static_cast<std::streamsize>(captured.size()));
+    captured.resize(static_cast<std::size_t>(diagnostics.gcount()));
+    return captured;
+  }
+
   namespace
   {
     using J = lsp::json::value;
@@ -1089,16 +1100,7 @@ namespace sagan::dap
         runtime_stderr_ += gdb_->captured_stderr();
       if (runtime_stderr_.find("SAGAN_RUNTIME_ERROR\t") == std::string::npos &&
           !runtime_diagnostics_path_.empty())
-      {
-        std::ifstream diagnostics(runtime_diagnostics_path_, std::ios::binary);
-        if (diagnostics)
-        {
-          std::string captured(65536, '\0');
-          diagnostics.read(captured.data(), static_cast<std::streamsize>(captured.size()));
-          captured.resize(static_cast<std::size_t>(diagnostics.gcount()));
-          runtime_stderr_ += captured;
-        }
-      }
+        runtime_stderr_ += read_runtime_diagnostics(runtime_diagnostics_path_);
       if (runtime_failure_published_ ||
           runtime_stderr_.find("SAGAN_RUNTIME_ERROR\t") == std::string::npos) return;
       runtime_failure_published_ = true;

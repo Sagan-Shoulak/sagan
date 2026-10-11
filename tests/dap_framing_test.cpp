@@ -1,5 +1,8 @@
+#include "../src/dap/adapter.hpp"
 #include "../src/dap/framing.hpp"
 
+#include <filesystem>
+#include <fstream>
 #include <sstream>
 #include <stdexcept>
 
@@ -37,5 +40,16 @@ auto main() -> int
               rejects("Content-Type: json\r\n\r\n{}") &&
               rejects("Content-Length: 1\n\na"),
           "DAP framing accepted malformed or oversized input");
+  const auto diagnostics = std::filesystem::current_path() / "build" /
+      "dap-runtime-diagnostics-test.txt";
+  {
+    std::ofstream output(diagnostics, std::ios::binary);
+    output << "SAGAN_RUNTIME_ERROR\tmarker\ntrailing";
+  }
+  require(sagan::dap::read_runtime_diagnostics(diagnostics, 12) == "SAGAN_RUNTIM" &&
+              sagan::dap::read_runtime_diagnostics(diagnostics, 0).empty() &&
+              sagan::dap::read_runtime_diagnostics(diagnostics.string() + ".missing").empty(),
+          "DAP runtime diagnostic reader was unavailable, unbounded, or accepted a missing file");
+  std::filesystem::remove(diagnostics);
   return 0;
 }
