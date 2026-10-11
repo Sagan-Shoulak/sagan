@@ -31,7 +31,7 @@ and module imports have compiler-owned suggestions and navigation.
 
 Reaching the next extension handoff requires several focused compiler-side
 increments followed by a release-payload validation pass. The preferred order
-is package completion and safe auto-import first, then debugger values and
+is package completion/navigation/auto-import consumption first, then debugger values and
 runtime-failure mapping, then debugger packaging and cross-platform validation.
 
 ## Dependable F2 rename
@@ -122,8 +122,8 @@ for continued local extension development:
 - Consume the versioned compiler-owned `packageCompletion` contract without
   duplicating package semantics. Consume the separately versioned
   `packageNavigation` contract without duplicating resolution semantics.
-  Complete safe import edits plus alias and collision handling under
-  `packageAutoImport`; keep that flag false until its end-to-end gate passes.
+  Consume the separately versioned safe `packageAutoImport` contract without
+  duplicating its alias, collision, or edit-placement rules.
 - Finish the experimental Debug Adapter Protocol implementation. `sagan-dap`
   can launch programs and exercise breakpoints, mapped stacks, source-mapped
   stop-on-entry, and source-level
@@ -141,7 +141,7 @@ When compiler work resumes, complete and advertise each capability separately
 rather than waiting for one large final patch:
 
 1. Complete contextual package completion and its protocol tests.
-2. Complete safe package auto-import edits, aliases, and multi-root conflicts.
+2. Consume the compiler's versioned package completion, navigation, and safe auto-import contracts.
 3. Complete missing-source package navigation behavior.
 4. Complete Sagan debugger values and runtime-failure/exception mapping.
 5. Expand DAP source-context, cancellation, termination, and cleanup tests.

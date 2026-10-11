@@ -94,7 +94,8 @@ namespace sagan::language_service
            << dap::breakpoint_mapping_schema << "\",\"packageCatalogSchema\":\""
            << package_catalog_schema << "\",\"packageCompletionSchema\":\""
            << package_completion_schema_version << "\",\"packageNavigationSchema\":\""
-           << package_navigation_schema_version << "\",\"debugAdapterExecutable\":\""
+           << package_navigation_schema_version << "\",\"packageAutoImportSchema\":\""
+           << package_auto_import_schema_version << "\",\"debugAdapterExecutable\":\""
 #ifdef _WIN32
            << "sagan-dap.exe"
 #else
@@ -120,7 +121,7 @@ namespace sagan::language_service
            << ",\"testDocumentRun\":true,\"testProjectRun\":true,\"testExplorer\":false"
             << ",\"packageIndexReader\":true,\"packageQuery\":true,\"packageCatalog\":true"
             << ",\"packageCompletion\":true,\"packageNavigation\":true"
-            << ",\"packageAutoImport\":false"
+            << ",\"packageAutoImport\":true"
            << ",\"languageServer\":" << boolean(value.language_server) << "}}\n";
     return output.str();
   }

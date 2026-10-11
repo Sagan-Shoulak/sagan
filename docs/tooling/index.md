@@ -34,7 +34,8 @@ There is no package registry or REPL yet. Recovered-source formatting changes
 only regions the compiler can prove safe; it refuses uncertain edits. The
 debug adapter is a development probe, not a supported extension feature:
 reliable values, exception mapping, and packaged GDB dependencies are still
-missing. Complete package completion and safe auto-import are also gated.
+missing. Package completion, navigation, and safe auto-import are independently
+versioned compiler capabilities.
 The [historical readiness audit](language-service-audit.md),
 [contracts](language-service-contracts.md), [implementation roadmap](language-service-roadmap.md),
 [formatting/edit safety guide](formatting-and-edits.md), and

@@ -78,8 +78,8 @@ for the complete downstream contract.
 `--capabilities-json` prints the versioned compiler-service schema and granular
 implemented/unavailable feature flags. Installed-package completion uses the
 `sagan-package-completion-v1` sub-contract and installed-package navigation uses
-`sagan-package-navigation-v1`; auto-import remains false until its independent
-gate passes. `--diagnostics-json` performs recovering
+`sagan-package-navigation-v1`; safe package auto-import uses the independent
+`sagan-package-auto-import-v1` contract. `--diagnostics-json` performs recovering
 lexical and syntax analysis followed, for complete syntax, by strict semantic
 and type checking through the reusable language-service API. It prints one
 machine-readable JSON document, including `recovered` state and multiple

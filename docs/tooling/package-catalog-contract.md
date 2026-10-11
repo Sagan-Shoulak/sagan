@@ -18,8 +18,8 @@ propose source edits to an installed dependency or its exported declarations.
 Installed-package completion and navigation have passed their compiler/LSP gates
 and are advertised as `packageCompletion` with schema
 `sagan-package-completion-v1`, and as `packageNavigation` with schema
-`sagan-package-navigation-v1`. `packageAutoImport` remains false and must be
-negotiated independently.
+`sagan-package-navigation-v1`. Safe import edits are independently advertised
+as `packageAutoImport` with schema `sagan-package-auto-import-v1`.
 
 A compiler library selector accepts a project manifest, local index,
 compiler version, and optional `sagan.lock`. Its lockfile format is
@@ -76,12 +76,14 @@ member completion on a value whose declared type comes from an imported
 package also uses the workspace's resolved type binding. Public methods carry
 their compiler-indexed signatures and owning module; this is tested through
 both library queries and standard LSP completion. The workspace snapshot must
-match the open document version before its type binding is used. The compiler
-library retains an experimental import-edit planner for unqualified exported
-names. Standard LSP completion deliberately omits those edit-bearing
-candidates while `packageAutoImport` is false, preventing clients from
-accidentally exposing unfinished auto-import behavior through ordinary
-completion. The planner remains a tested foundation for its separate gate.
+match the open document version before its type binding is used. For
+unqualified exported names, standard LSP completion returns compiler-owned
+import edits only after the planner proves a unique export, collision-free
+binding, safe deterministic insertion point, matching document version, and a
+successful semantic recheck. It preserves line endings and dependency aliases,
+honors installed-source overlays and the containing workspace root, and omits
+candidates for missing or incompatible sources. Cancellation or a changed
+document discards the result instead of returning a stale edit.
 An incomplete `import` or `from` module path also receives
 compiler-owned module suggestions
 from the local source tree and locked installed dependencies, even if the
@@ -90,8 +92,8 @@ invalid index produces an error rather than invented candidates. The query
 returns a standard LSP `CompletionList` capped at 256 module names;
 `isIncomplete` is true when more matching names exist, so the editor can
 request a narrower prefix. Local and locked dependency names retain their
-deterministic order. This does
-not yet cover all package export/member contexts or conflict-safe auto-import edits.
+deterministic order. Lockfile updates remain explicit; accepting a completion
+does not modify dependency pins.
 For a partial selective import such as `import orbit_a from orbit_tools.main`,
 standard LSP completion now returns the selected module's explicitly exported
 names, signatures, documentation, deprecation state, and replacement edit.

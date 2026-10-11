@@ -50,9 +50,10 @@ def run():
         compiler = initialized["experimental"]["compiler"]
         assert compiler["packageCompletionSchema"] == "sagan-package-completion-v1", compiler
         assert compiler["packageNavigationSchema"] == "sagan-package-navigation-v1", compiler
+        assert compiler["packageAutoImportSchema"] == "sagan-package-auto-import-v1", compiler
         assert compiler["capabilities"]["packageCompletion"] is True, compiler
         assert compiler["capabilities"]["packageNavigation"] is True, compiler
-        assert compiler["capabilities"]["packageAutoImport"] is False, compiler
+        assert compiler["capabilities"]["packageAutoImport"] is True, compiler
         send(process, {"jsonrpc": "2.0", "method": "initialized", "params": {}})
         source = entry.read_text(encoding="utf-8")
         send(process, {"jsonrpc": "2.0", "method": "textDocument/didOpen", "params": {
@@ -280,8 +281,31 @@ def run():
                        "params": {"textDocument": {"uri": scratch_uri}, "position": {
                            "line": 2, "character": len("fun probe(): Int { ")}}})
         auto_imports = answer(17)
-        assert not any(item.get("additionalTextEdits") for item in auto_imports), auto_imports
-        assert not any(item["label"] == "🚀" for item in auto_imports), auto_imports
+        rocket = next((item for item in auto_imports if item["label"] == "🚀"), None)
+        assert rocket and rocket["textEdit"]["newText"] == "🚀", auto_imports
+        assert rocket["additionalTextEdits"] == [{
+            "range": {"start": {"line": 1, "character": 0},
+                      "end": {"line": 1, "character": 0}},
+            "newText": "import 🚀 from orbit_tools.main\n",
+        }], rocket
+        assert "from orbit_tools.main" in rocket["detail"], rocket
+        second_scratch_uri = server_file_uri(second_project / "src" / "scratch.sagan")
+        second_scratch = (
+            "module scratch\n"
+            "import parent.main as package_tools\n"
+            "fun probe(): Int { return 0 }\n"
+        )
+        send(process, {"jsonrpc": "2.0", "method": "textDocument/didOpen", "params": {
+            "textDocument": {"uri": second_scratch_uri, "languageId": "sagan", "version": 1,
+                             "text": second_scratch},
+        }})
+        send(process, {"jsonrpc": "2.0", "id": 33, "method": "textDocument/completion",
+                       "params": {"textDocument": {"uri": second_scratch_uri}, "position": {
+                           "line": 2, "character": len("fun probe(): Int { return ")}}})
+        second_auto_imports = answer(33)
+        assert not any(item["label"] == "parent_answer" and item.get("additionalTextEdits")
+                       for item in second_auto_imports), second_auto_imports
+        assert not any(item["label"] == "🚀" for item in second_auto_imports), second_auto_imports
         manifest_path = project / "sagan.toml"
         manifest_uri = server_file_uri(manifest_path)
         manifest_text = manifest_path.read_text(encoding="utf-8")
