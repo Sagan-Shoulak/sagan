@@ -540,14 +540,34 @@ def local_scalar_values(binary, gdb):
     with tempfile.TemporaryDirectory(prefix="sagan local values ") as folder:
         source = Path(folder) / "locals 🚀.sagan"
         source.write_text(
+            "class Leaf {\n"
+            "  let code: Int\n"
+            "  new(code: Int) {\n"
+            "    self.code = code\n"
+            "  }\n"
+            "}\n"
+            "class Payload {\n"
+            "  let amount: Int\n"
+            "  let active: Bool\n"
+            "  let note: String\n"
+            "  let leaf: Leaf\n"
+            "  new(amount: Int, active: Bool, note: String, leaf: Leaf) {\n"
+            "    self.amount = amount\n"
+            "    self.active = active\n"
+            "    self.note = note\n"
+            "    self.leaf = leaf\n"
+            "  }\n"
+            "}\n"
             "class Probe {\n"
             "  let count: Int\n"
             "  let ready: Bool\n"
             "  let label: String\n"
+            "  let payload: Payload\n"
             "  new(count: Int, ready: Bool, label: String) {\n"
             "    self.count = count\n"
             "    self.ready = ready\n"
             "    self.label = label\n"
+            "    self.payload = Payload(9, false, \"nested 🚀\", Leaf(5))\n"
             "  }\n"
             "}\n"
             "let local = 1\n"
@@ -593,7 +613,7 @@ def local_scalar_values(binary, gdb):
             expect(lambda item: item.get("event") == "initialized")
             send(2, "launch", {"program": str(source)})
             send(3, "setBreakpoints", {"source": {"path": str(source)},
-                                       "breakpoints": [{"line": 17}, {"line": 18}, {"line": 19}]})
+                                       "breakpoints": [{"line": 37}, {"line": 38}, {"line": 39}]})
             assert expect(lambda item: item.get("request_seq") == 3)["success"]
             send(4, "configurationDone")
             assert expect(lambda item: item.get("request_seq") == 4)["success"]
@@ -601,7 +621,7 @@ def local_scalar_values(binary, gdb):
             preinit = expect(lambda item: item.get("event") == "stopped")
             send(22, "stackTrace", {"threadId": preinit["body"]["threadId"]})
             preinit_stack = expect(lambda item: item.get("request_seq") == 22)
-            assert preinit_stack["body"]["stackFrames"][0]["line"] == 17, preinit_stack
+            assert preinit_stack["body"]["stackFrames"][0]["line"] == 37, preinit_stack
             send(23, "evaluate", {"frameId": preinit_stack["body"]["stackFrames"][0]["id"],
                                    "expression": "probe.count", "context": "hover"})
             assert not expect(lambda item: item.get("request_seq") == 23)["success"]
@@ -610,7 +630,7 @@ def local_scalar_values(binary, gdb):
             stopped = expect(lambda item: item.get("event") == "stopped")
             send(5, "stackTrace", {"threadId": stopped["body"]["threadId"]})
             stack = expect(lambda item: item.get("request_seq") == 5)
-            assert stack["body"]["stackFrames"][0]["line"] == 18, stack
+            assert stack["body"]["stackFrames"][0]["line"] == 38, stack
             frame_id = stack["body"]["stackFrames"][0]["id"]
             send(6, "scopes", {"frameId": frame_id})
             scopes = expect(lambda item: item.get("request_seq") == 6)
@@ -639,7 +659,20 @@ def local_scalar_values(binary, gdb):
             assert class_values["count"]["value"] == "42" and \
                 class_values["ready"]["value"] == "true", class_values
             assert class_values["label"]["value"] == '"ship 🚀"', class_values
-            assert all(item["variablesReference"] == 0 for item in class_values.values()), class_values
+            assert class_values["count"]["variablesReference"] == 0 and \
+                class_values["ready"]["variablesReference"] == 0 and \
+                class_values["label"]["variablesReference"] == 0, class_values
+            payload_reference = class_values["payload"]["variablesReference"]
+            assert payload_reference > 0 and class_values["payload"]["value"] == "<Payload>", class_values
+            send(30, "variables", {"variablesReference": payload_reference})
+            payload_fields = expect(lambda item: item.get("request_seq") == 30)
+            assert payload_fields["success"], payload_fields
+            payload_values = {item["name"]: item for item in payload_fields["body"]["variables"]}
+            assert payload_values["amount"]["value"] == "9" and \
+                payload_values["active"]["value"] == "false", payload_values
+            assert payload_values["note"]["value"] == '"nested 🚀"', payload_values
+            assert "leaf" not in payload_values and \
+                all(item["variablesReference"] == 0 for item in payload_values.values()), payload_values
             send(25, "evaluate", {"frameId": frame_id, "expression": "probe.count",
                                    "context": "hover"})
             count_value = expect(lambda item: item.get("request_seq") == 25)
@@ -675,6 +708,8 @@ def local_scalar_values(binary, gdb):
             send(29, "evaluate", {"frameId": frame_id, "expression": "probe.count",
                                    "context": "hover"})
             assert not expect(lambda item: item.get("request_seq") == 29)["success"]
+            send(31, "variables", {"variablesReference": payload_reference})
+            assert not expect(lambda item: item.get("request_seq") == 31)["success"]
             resumed_stop = expect(lambda item: item.get("event") == "stopped")
             send(13, "stackTrace", {"threadId": resumed_stop["body"]["threadId"]})
             resumed_stack = expect(lambda item: item.get("request_seq") == 13)

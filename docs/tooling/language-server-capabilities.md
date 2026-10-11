@@ -102,6 +102,8 @@ stepping, variable, evaluation, attach, and optimized-local flags remain false.
 scalar and String fields on initialized local class values.
 `debugMemberEvaluate` is independently true for exact one-level member lookup
 on those same values; general `debugEvaluate` remains false.
+`debugNestedClass` is independently true for one class-valued child followed
+by direct scalar/String fields; deeper recursion and collections remain false.
 
 For an open document named `sagan.toml`, the server now validates the unsaved
 buffer with the same manifest parser used for disk builds and publishes

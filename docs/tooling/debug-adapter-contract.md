@@ -108,6 +108,14 @@ calls, collections, mutation, and arbitrary expressions remain unsupported.
 `debugMemberEvaluate` is true for this exact-member contract while
 `debugEvaluate` remains false.
 
+The independently versioned `sagan-dap-nested-class-v1` slice lets an
+initialized local class expose one direct class-valued field as a child. That
+child exposes only its own direct Bool, numeric, and String source fields.
+Nested references share the current stop lifetime and are invalidated on
+continue or a new stop. A second class-valued hop is omitted, so recursion,
+cycles, inherited/generated fields, collections, and general object traversal
+remain unsupported. `debugNestedClass` is true only for this depth-one contract.
+
 The Windows prototype uses GDB 16.3's native DAP interpreter behind a
 Sagan-owned service. The service, not the editor, builds the selected source
 or package, retains its generated-code map, resolves Sagan breakpoints, maps

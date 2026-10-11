@@ -267,6 +267,7 @@ namespace sagan::dap
       std::uint64_t stop_generation{};
       std::string owner_type;
       std::string native_object;
+      std::size_t depth{};
     };
 
     class session
@@ -1288,12 +1289,24 @@ namespace sagan::dap
               else if (variable_frame)
               {
                 const auto native_object = class_object_expression(*selected, *variable_frame);
+                const auto has_direct_fields = [&](const std::string &type)
+                {
+                  return std::any_of(build->debug->class_fields.begin(),
+                      build->debug->class_fields.end(), [&](const auto &field)
+                      {
+                        return field.owner_type == type &&
+                            field.representation ==
+                                language_service::debug_value_representation::direct_value;
+                      });
+                };
                 const auto field_count = static_cast<std::int64_t>(std::count_if(
                     build->debug->class_fields.begin(), build->debug->class_fields.end(),
                     [&](const auto &field)
                     {
                       return field.owner_type == selected->type &&
-                          field.representation == language_service::debug_value_representation::direct_value;
+                          (field.representation ==
+                               language_service::debug_value_representation::direct_value ||
+                           has_direct_fields(field.type));
                     }));
                 if (native_object && field_count > 0)
                 {
@@ -1301,7 +1314,7 @@ namespace sagan::dap
                   const auto reference = next_class_field_reference_++;
                   class_field_references_.insert_or_assign(reference,
                       class_field_reference{*variable_frame, stop_generation_, selected->type,
-                                            *native_object});
+                                            *native_object, 0});
                   variable.insert_or_assign("value", "<" + selected->type + ">");
                   variable.insert_or_assign("variablesReference", reference);
                   variable.insert_or_assign("namedVariables", field_count);
@@ -1688,14 +1701,39 @@ namespace sagan::dap
           std::vector<scalar_probe> probes;
           for (const auto &known : build->debug->class_fields)
           {
-            if (known.owner_type != expansion->owner_type ||
-                known.representation != language_service::debug_value_representation::direct_value)
+            if (known.owner_type != expansion->owner_type) continue;
+            if (known.representation == language_service::debug_value_representation::direct_value)
+            {
+              variables.emplace_back(J::object{{"name", known.name}, {"type", known.type},
+                                                {"value", "<value unavailable>"},
+                                                {"variablesReference", 0}});
+              probes.push_back({variables.size() - 1,
+                                expansion->native_object + "->" + known.generated_name, known.type});
               continue;
+            }
+            if (expansion->depth >= 1) continue;
+            const auto child_count = static_cast<std::int64_t>(std::count_if(
+                build->debug->class_fields.begin(), build->debug->class_fields.end(),
+                [&](const auto &field)
+                {
+                  return field.owner_type == known.type &&
+                      field.representation ==
+                          language_service::debug_value_representation::direct_value;
+                }));
+            if (child_count == 0) continue;
+            std::int64_t child_reference{};
+            {
+              std::scoped_lock lock(state_mutex_);
+              child_reference = next_class_field_reference_++;
+              class_field_references_.insert_or_assign(child_reference,
+                  class_field_reference{expansion->frame_id, generation, known.type,
+                      expansion->native_object + "->" + known.generated_name + "._M_ptr",
+                      expansion->depth + 1});
+            }
             variables.emplace_back(J::object{{"name", known.name}, {"type", known.type},
-                                              {"value", "<value unavailable>"},
-                                              {"variablesReference", 0}});
-            probes.push_back({variables.size() - 1,
-                              expansion->native_object + "->" + known.generated_name, known.type});
+                                              {"value", "<" + known.type + ">"},
+                                              {"variablesReference", child_reference},
+                                              {"namedVariables", child_count}});
           }
           auto body = J::object{{"variables", variables}};
           auto answer = J::object{{"type", "response"}, {"request_seq", seq},

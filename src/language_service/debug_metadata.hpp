@@ -17,6 +17,7 @@ namespace sagan::language_service
   inline constexpr std::string_view debug_exception_schema_version = "sagan-dap-exceptions-v1";
   inline constexpr std::string_view debug_class_fields_schema_version = "sagan-dap-class-fields-v1";
   inline constexpr std::string_view debug_member_evaluate_schema_version = "sagan-dap-member-evaluate-v1";
+  inline constexpr std::string_view debug_nested_class_schema_version = "sagan-dap-nested-class-v1";
 
   struct debug_breakpoint
   {
