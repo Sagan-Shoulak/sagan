@@ -15,6 +15,7 @@ namespace sagan::language_service
 {
   inline constexpr std::string_view debug_metadata_schema_version = "sagan-debug-metadata-v1";
   inline constexpr std::string_view debug_exception_schema_version = "sagan-dap-exceptions-v1";
+  inline constexpr std::string_view debug_class_fields_schema_version = "sagan-dap-class-fields-v1";
 
   struct debug_breakpoint
   {
@@ -78,6 +79,16 @@ namespace sagan::language_service
     bool available_in_optimized{};
   };
 
+  struct debug_class_field
+  {
+    semantic::symbol_id symbol;
+    std::string owner_type;
+    std::string name;
+    std::string generated_name;
+    std::string type;
+    debug_value_representation representation{debug_value_representation::unavailable};
+  };
+
   struct debug_metadata
   {
     source::document_identity document;
@@ -87,6 +98,7 @@ namespace sagan::language_service
     std::vector<debug_exception> exceptions;
     std::vector<debug_scope> scopes;
     std::vector<debug_variable> variables;
+    std::vector<debug_class_field> class_fields;
     std::vector<debug_expression_hook> expression_hooks;
   };
 

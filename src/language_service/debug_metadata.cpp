@@ -135,6 +135,29 @@ namespace sagan::language_service
                                     symbol.kind == semantic::symbol_kind::parameter,
                                     representation, false});
       }
+    for (const auto &scope : model.scopes)
+    {
+      if (!scope.label.starts_with("type ")) continue;
+      const auto owner = scope.label.substr(5);
+      for (const auto &symbol : scope.symbols)
+      {
+        if (symbol.origin != semantic::symbol_origin::source ||
+            (symbol.kind != semantic::symbol_kind::field &&
+             symbol.kind != semantic::symbol_kind::constant_field)) continue;
+        std::string type;
+        for (const auto &declaration : types.declarations)
+          if (declaration.name == symbol.name &&
+              declaration.range.begin == symbol.declaration.begin &&
+              declaration.range.end == symbol.declaration.end)
+          { type = declaration.type; break; }
+        const auto scalar = type == "Bool" || type == "String" || type.starts_with("Int") ||
+                            type.starts_with("UInt") || type.starts_with("Float");
+        result.class_fields.push_back({symbol.id, owner, symbol.name,
+            codegen::generated_identifier(symbol.name), type,
+            scalar ? debug_value_representation::direct_value
+                   : debug_value_representation::unavailable});
+      }
+    }
     for (const auto &resolution : model.resolutions)
     {
       const auto variable = std::find_if(result.variables.begin(), result.variables.end(),

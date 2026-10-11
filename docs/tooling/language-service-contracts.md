@@ -324,7 +324,8 @@ map to these source locations; arbitrary native crashes may have no precise
 Sagan location. `sagan-debug-metadata-v1` records generated function names and
 symbol identities, candidate breakpoint ranges, lexical scopes/lifetimes,
 local value representations, and conservative pure-identifier expression
-hooks. `source_for_stack_frame` maps a generated function/line/column back to
+hooks. `sagan-dap-class-fields-v1` adds direct source class-field ownership,
+generated names, Sagan types, and scalar availability. `source_for_stack_frame` maps a generated function/line/column back to
 Sagan, and `plan_debug_launch` supplies executable, working directory, and
 environment for a successful build. Optimized local evaluation and attach are
 explicitly unsupported. An experimental `sagan-dap` executable now uses GDB's
@@ -333,7 +334,8 @@ frames, and source-level `next`, `stepIn`, and `stepOut` probes, including an
 imported module. It is not yet a supported release debugger: reliable Sagan
 values, complete stepping contexts, failure mapping, distributable Linux
 validation, and the GDB runtime package remain incomplete. `debugExceptions`
-is true only for raised Sagan exceptions; all other live debugger flags stay false.
+is true only for raised Sagan exceptions. `debugClassFields` is separately true
+for direct scalar/String field expansion; aggregate variable/evaluation flags stay false.
 Explicit `test "name" { ... }`
 declarations now parse and type-check, and `tests.hpp` discovers them in a
 document or resolved project with stable ID, URI, UTF-16 name range, and

@@ -261,6 +261,14 @@ namespace sagan::dap
       std::uint64_t stop_generation{};
     };
 
+    struct class_field_reference
+    {
+      std::int64_t frame_id{};
+      std::uint64_t stop_generation{};
+      std::string owner_type;
+      std::string native_object;
+    };
+
     class session
     {
       std::istream &input_;
@@ -286,6 +294,7 @@ namespace sagan::dap
       std::map<std::int64_t, std::set<std::string>> visible_parameters_;
       std::map<std::int64_t, std::int64_t> variable_requests_;
       std::map<std::int64_t, pending_variable_batch> pending_variable_batches_;
+      std::map<std::int64_t, class_field_reference> class_field_references_;
       std::map<std::int64_t, std::int64_t> pending_exception_breakpoints_;
       std::map<std::int64_t, std::int64_t> stack_threads_;
       std::map<std::int64_t, source_location> last_location_;
@@ -298,6 +307,7 @@ namespace sagan::dap
       std::atomic_bool shutting_down_{false};
       std::atomic_bool terminated_{false};
       std::atomic<std::int64_t> next_seq_{1000000};
+      std::int64_t next_class_field_reference_{1000000000};
       std::optional<std::int64_t> launch_seq_;
       bool launch_pending_{};
       bool stop_on_entry_pending_{};
@@ -406,6 +416,31 @@ namespace sagan::dap
           }
           response(client_seq, "variables", false, {}, error.what());
         }
+      }
+
+      auto class_object_expression(const language_service::debug_variable &known,
+                                   const std::int64_t frame_id) -> std::optional<std::string>
+      {
+        if (known.representation != language_service::debug_value_representation::shared_value)
+          return {};
+        std::optional<source_location> frame_location;
+        {
+          std::scoped_lock lock(state_mutex_);
+          if (const auto it = frame_locations_.find(frame_id); it != frame_locations_.end())
+            frame_location = it->second;
+        }
+        if (!frame_location || !known.source_path ||
+            path_from_utf8(frame_location->path).lexically_normal() !=
+                known.source_path->lexically_normal()) return {};
+        const auto source_document = source_.read_path(*known.source_path);
+        const auto declared_end = source_document ?
+            source_document.value->to_utf16(known.declaration.bytes.end) : std::nullopt;
+        const auto lifetime_end = source_document ?
+            source_document.value->to_utf16(known.lifetime.bytes.end) : std::nullopt;
+        if (!declared_end || frame_location->line <= static_cast<std::int64_t>(declared_end->line + 1) ||
+            !lifetime_end || frame_location->line > static_cast<std::int64_t>(lifetime_end->line + 1))
+          return {};
+        return "(*(" + known.generated_name + "._M_ptr))._M_ptr";
       }
 
       auto forward(const J &request) -> void
@@ -1250,6 +1285,28 @@ namespace sagan::dap
                   visible_parameters_[*variable_frame].insert(selected->symbol.value);
                 }
               }
+              else if (variable_frame)
+              {
+                const auto native_object = class_object_expression(*selected, *variable_frame);
+                const auto field_count = static_cast<std::int64_t>(std::count_if(
+                    build->debug->class_fields.begin(), build->debug->class_fields.end(),
+                    [&](const auto &field)
+                    {
+                      return field.owner_type == selected->type &&
+                          field.representation == language_service::debug_value_representation::direct_value;
+                    }));
+                if (native_object && field_count > 0)
+                {
+                  std::scoped_lock lock(state_mutex_);
+                  const auto reference = next_class_field_reference_++;
+                  class_field_references_.insert_or_assign(reference,
+                      class_field_reference{*variable_frame, stop_generation_, selected->type,
+                                            *native_object});
+                  variable.insert_or_assign("value", "<" + selected->type + ">");
+                  variable.insert_or_assign("variablesReference", reference);
+                  variable.insert_or_assign("namedVariables", field_count);
+                }
+              }
               visible.emplace_back(std::move(variable));
             }
         body.insert_or_assign("variables", visible);
@@ -1347,6 +1404,7 @@ namespace sagan::dap
               std::scoped_lock lock(state_mutex_);
               frame_locations_.clear();
               variable_frames_.clear();
+              class_field_references_.clear();
               visible_parameters_.clear();
               ++stop_generation_;
               stopped_thread_ = thread_id;
@@ -1398,6 +1456,7 @@ namespace sagan::dap
             std::scoped_lock lock(state_mutex_);
             frame_locations_.clear();
             variable_frames_.clear();
+            class_field_references_.clear();
             visible_parameters_.clear();
             ++stop_generation_;
             if (stepping_) continue;
@@ -1562,6 +1621,58 @@ namespace sagan::dap
             throw;
           }
         }
+        else if (command == "variables")
+        {
+          const auto reference = integer_field(field(request, "arguments"), "variablesReference");
+          std::optional<class_field_reference> expansion;
+          std::shared_ptr<language_service::native_operation_result> build;
+          {
+            std::scoped_lock lock(state_mutex_);
+            build = build_;
+            if (const auto found = class_field_references_.find(reference);
+                found != class_field_references_.end()) expansion = found->second;
+          }
+          if (!expansion)
+          {
+            {
+              std::scoped_lock lock(state_mutex_);
+              if (const auto frame = variable_frames_.find(reference); frame != variable_frames_.end())
+                variable_requests_.insert_or_assign(seq, frame->second);
+            }
+            forward(request);
+            return true;
+          }
+          std::uint64_t generation{};
+          {
+            std::scoped_lock lock(state_mutex_);
+            generation = stop_generation_;
+          }
+          if (expansion->stop_generation != generation || !build || !build->debug)
+          {
+            response(seq, command, false, {}, "Sagan object reference is no longer valid");
+            return true;
+          }
+          J::array variables;
+          std::vector<scalar_probe> probes;
+          for (const auto &known : build->debug->class_fields)
+          {
+            if (known.owner_type != expansion->owner_type ||
+                known.representation != language_service::debug_value_representation::direct_value)
+              continue;
+            variables.emplace_back(J::object{{"name", known.name}, {"type", known.type},
+                                              {"value", "<value unavailable>"},
+                                              {"variablesReference", 0}});
+            probes.push_back({variables.size() - 1,
+                              expansion->native_object + "->" + known.generated_name, known.type});
+          }
+          auto body = J::object{{"variables", variables}};
+          auto answer = J::object{{"type", "response"}, {"request_seq", seq},
+                                  {"command", "variables"}, {"success", true}};
+          if (probes.empty()) response(seq, command, true, body);
+          else send_variable_probe({answer, body, variables, std::move(probes), 0,
+                                    expansion->frame_id, generation});
+          return true;
+        }
         else if (command == "configurationDone" || command == "threads" ||
                  command == "stackTrace" || command == "scopes" || command == "variables" ||
                  command == "continue" || command == "pause" || command == "next" ||
@@ -1576,13 +1687,6 @@ namespace sagan::dap
           {
             std::scoped_lock lock(state_mutex_);
             scope_requests_.insert_or_assign(seq, integer_field(field(request, "arguments"), "frameId"));
-          }
-          if (command == "variables")
-          {
-            const auto reference = integer_field(field(request, "arguments"), "variablesReference");
-            std::scoped_lock lock(state_mutex_);
-            if (const auto frame = variable_frames_.find(reference); frame != variable_frames_.end())
-              variable_requests_.insert_or_assign(seq, frame->second);
           }
           if (command == "pause" || command == "continue")
           {

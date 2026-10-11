@@ -92,6 +92,13 @@ Broader value support is still required before `debugVariables` or
 `debugEvaluate` can be advertised.
 `debugEvaluate` and `debugVariables` remain false.
 
+The independently versioned `sagan-dap-class-fields-v1` slice expands the
+direct Bool, numeric, and String fields of an initialized local class value in
+DAP `variables`. Child references are valid only for the current stop and are
+cleared on continue or a new stop. Inherited, generated mixin, nested object,
+collection, mutation, and optimized-local support are not claimed.
+`debugClassFields` is true for this narrow contract.
+
 The Windows prototype uses GDB 16.3's native DAP interpreter behind a
 Sagan-owned service. The service, not the editor, builds the selected source
 or package, retains its generated-code map, resolves Sagan breakpoints, maps
