@@ -98,9 +98,9 @@ into a project. `sagan/packages/catalog` reports source-derived exports and
 signatures when installed source can be checked. The versioned
 `sagan-package-completion-v1` contract covers unfinished module paths,
 selective imports, qualified names, types, and members. Definition and hover
-already work for several package-owned contexts, but `packageNavigation`
-remains false until its complete matrix passes. `packageAutoImport` also
-remains false, so the server omits edit-bearing package candidates. See the
+for package-owned contexts are advertised through the independent
+`sagan-package-navigation-v1` contract after its complete matrix passed.
+`packageAutoImport` remains false, so the server omits edit-bearing package candidates. See the
 [package catalog contract](package-catalog-contract.md).
 
 ## Reliability gate

@@ -11,8 +11,11 @@ from lsp_protocol_test import ROOT, SERVER, read_frames, send, server_file_uri
 
 def run():
     project = ROOT / "tests" / "fixtures" / "catalog" / "consumer-alias"
+    second_project = ROOT / "tests" / "fixtures" / "catalog" / "consumer-transitive"
     entry = project / "src" / "main.sagan"
+    second_entry = second_project / "src" / "main.sagan"
     installed = ROOT / "tests" / "fixtures" / "catalog" / "orbit-tools" / "src" / "main.sagan"
+    parent_installed = ROOT / "tests" / "fixtures" / "catalog" / "parent" / "src" / "main.sagan"
     environment = os.environ.copy()
     environment["SAGAN_PACKAGE_INDEX"] = str(ROOT / "tests" / "fixtures" / "catalog" / "current-compiler-index.tsv")
     process = subprocess.Popen([str(SERVER)], cwd=ROOT, env=environment,
@@ -37,14 +40,18 @@ def run():
     uri = server_file_uri(entry)
     try:
         send(process, {"jsonrpc": "2.0", "id": 1, "method": "initialize", "params": {
-            "workspaceFolders": [{"uri": server_file_uri(project), "name": "consumer-alias"}],
+            "workspaceFolders": [
+                {"uri": server_file_uri(project), "name": "consumer-alias"},
+                {"uri": server_file_uri(second_project), "name": "consumer-transitive"},
+            ],
         }})
         initialized = answer(1)
         assert initialized["capabilities"]["definitionProvider"]
         compiler = initialized["experimental"]["compiler"]
         assert compiler["packageCompletionSchema"] == "sagan-package-completion-v1", compiler
+        assert compiler["packageNavigationSchema"] == "sagan-package-navigation-v1", compiler
         assert compiler["capabilities"]["packageCompletion"] is True, compiler
-        assert compiler["capabilities"]["packageNavigation"] is False, compiler
+        assert compiler["capabilities"]["packageNavigation"] is True, compiler
         assert compiler["capabilities"]["packageAutoImport"] is False, compiler
         send(process, {"jsonrpc": "2.0", "method": "initialized", "params": {}})
         source = entry.read_text(encoding="utf-8")
@@ -88,6 +95,25 @@ def run():
         assert refused_package_edit.get("error", {}).get("code") == -32803 and \
             "Installed package" in refused_package_edit["error"]["message"], refused_package_edit
         member_line = next(i for i, line in enumerate(lines) if "package_tools.orbit_answer" in line)
+        member_position = {"line": member_line,
+                           "character": lines[member_line].index("orbit_answer") + 2}
+        send(process, {"jsonrpc": "2.0", "id": 29, "method": "textDocument/definition",
+                       "params": {"textDocument": {"uri": uri}, "position": member_position}})
+        qualified_target = answer(29)
+        assert qualified_target and qualified_target[0]["uri"] == server_file_uri(installed), \
+            qualified_target
+        send(process, {"jsonrpc": "2.0", "id": 30, "method": "textDocument/hover",
+                       "params": {"textDocument": {"uri": uri}, "position": member_position}})
+        assert "orbit_answer" in str(answer(30))
+        local_line = next(i for i, line in enumerate(lines) if "local_tools.local_answer" in line)
+        send(process, {"jsonrpc": "2.0", "id": 31, "method": "textDocument/definition",
+                       "params": {"textDocument": {"uri": uri}, "position": {
+                           "line": local_line,
+                           "character": lines[local_line].index("local_answer") + 2,
+                       }}})
+        local_target = answer(31)
+        assert local_target and local_target[0]["uri"] == server_file_uri(
+            project / "src" / "orbit_tools.sagan"), local_target
         send(process, {"jsonrpc": "2.0", "id": 4, "method": "textDocument/completion",
                        "params": {"textDocument": {"uri": uri}, "position": {
                            "line": member_line,
@@ -101,12 +127,14 @@ def run():
                        "params": {"textDocument": {"uri": uri}, "position": {
                            "line": type_line, "character": lines[type_line].index("OrbitProbe") + 2,
                        }}})
-        assert answer(16), "Imported class did not resolve in LSP"
+        imported_type = answer(16)
+        assert imported_type and imported_type[0]["uri"] == server_file_uri(installed), imported_type
         send(process, {"jsonrpc": "2.0", "id": 17, "method": "textDocument/typeDefinition",
                        "params": {"textDocument": {"uri": uri}, "position": {
                            "line": probe_line, "character": lines[probe_line].index("probe.sample") + 2,
                        }}})
-        assert answer(17), "Imported receiver type did not resolve in LSP"
+        receiver_type = answer(17)
+        assert receiver_type and receiver_type[0]["uri"] == server_file_uri(installed), receiver_type
         send(process, {"jsonrpc": "2.0", "id": 15, "method": "textDocument/completion",
                        "params": {"textDocument": {"uri": uri}, "position": {
                            "line": probe_line,
@@ -115,6 +143,22 @@ def run():
         probe_completion = answer(15)
         assert any(item["label"] == "sample" and item["detail"] == "(value: Int): Int"
                    for item in probe_completion), probe_completion
+        second_uri = server_file_uri(second_entry)
+        second_source = second_entry.read_text(encoding="utf-8")
+        send(process, {"jsonrpc": "2.0", "method": "textDocument/didOpen", "params": {
+            "textDocument": {"uri": second_uri, "languageId": "sagan", "version": 1,
+                             "text": second_source},
+        }})
+        second_lines = second_source.splitlines()
+        second_call = next(i for i, line in enumerate(second_lines) if "parent_answer()" in line)
+        send(process, {"jsonrpc": "2.0", "id": 32, "method": "textDocument/definition",
+                       "params": {"textDocument": {"uri": second_uri}, "position": {
+                           "line": second_call,
+                           "character": second_lines[second_call].index("parent_answer") + 2,
+                       }}})
+        second_target = answer(32)
+        assert second_target and second_target[0]["uri"] == server_file_uri(parent_installed), \
+            second_target
         partial = source + "import orbit_t"
         send(process, {"jsonrpc": "2.0", "method": "textDocument/didChange", "params": {
             "textDocument": {"uri": uri, "version": 2},

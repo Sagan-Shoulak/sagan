@@ -58,10 +58,12 @@ auto main() -> int
                   ->get("languageServer")->boolean() == true &&
               initialized.get("experimental")->get("compiler")->get("packageCompletionSchema")
                   ->string() == "sagan-package-completion-v1" &&
+              initialized.get("experimental")->get("compiler")->get("packageNavigationSchema")
+                  ->string() == "sagan-package-navigation-v1" &&
               initialized.get("experimental")->get("compiler")->get("capabilities")
                   ->get("packageCompletion")->boolean() == true &&
               initialized.get("experimental")->get("compiler")->get("capabilities")
-                  ->get("packageNavigation")->boolean() == false &&
+                  ->get("packageNavigation")->boolean() == true &&
               initialized.get("experimental")->get("compiler")->get("capabilities")
                   ->get("packageAutoImport")->boolean() == false,
           "initialize did not advertise implemented hover support");

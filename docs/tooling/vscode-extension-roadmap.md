@@ -120,11 +120,10 @@ for continued local extension development:
   become supported. The extension must not reproduce manifest parsing or
   validation in TypeScript.
 - Consume the versioned compiler-owned `packageCompletion` contract without
-  duplicating package semantics. Complete navigation when installed source is
-  missing and focused multi-root conflict tests under the separate
-  `packageNavigation` gate. Complete safe import edits plus alias and collision
-  handling under `packageAutoImport`. Keep those two flags false until their
-  individual end-to-end gates pass.
+  duplicating package semantics. Consume the separately versioned
+  `packageNavigation` contract without duplicating resolution semantics.
+  Complete safe import edits plus alias and collision handling under
+  `packageAutoImport`; keep that flag false until its end-to-end gate passes.
 - Finish the experimental Debug Adapter Protocol implementation. `sagan-dap`
   can launch programs and exercise breakpoints, mapped stacks, source-mapped
   stop-on-entry, and source-level
