@@ -38,6 +38,43 @@ auto main() -> int
               !sagan::dap::map_breakpoint(metadata, generated, document, {0, 5}).resolved,
           "Nonexecutable line unexpectedly accepted a breakpoint");
 
+  const std::string class_text =
+      "class Nested {}\n"
+      "class Probe {\n"
+      "  let count: Int\n"
+      "  let ready: Bool\n"
+      "  let label: String\n"
+      "  let nested: Nested\n"
+      "}\n";
+  const sagan::source::document_snapshot class_document(
+      {{sagan::source::document_id{3}, sagan::source::document_uri{"untitled:dap-class-fields"}, {}},
+       1, class_text});
+  const auto class_parsed = sagan::syntax::analyze(class_document, {.recover = false});
+  require(class_parsed.value && class_parsed.value->strict_ast, "DAP class fields did not parse");
+  const auto &class_tree = *class_parsed.value->strict_ast;
+  const auto class_model = semantic::analyze(class_tree);
+  const auto class_types = semantic::check_types(class_tree);
+  const auto class_cpp = codegen::generate_cpp_mapped(class_tree, class_types, "fields.sagan");
+  const auto class_metadata = sagan::language_service::derive_debug_metadata(
+      class_document, class_model, class_types, class_cpp);
+  require(class_metadata.class_fields.size() == 4,
+          "Direct source class fields did not produce debugger metadata");
+  const auto scalar_fields = std::count_if(class_metadata.class_fields.begin(),
+      class_metadata.class_fields.end(), [](const auto &field)
+      {
+        return field.owner_type == "Probe" &&
+            field.representation == sagan::language_service::debug_value_representation::direct_value;
+      });
+  require(scalar_fields == 3 &&
+              std::any_of(class_metadata.class_fields.begin(), class_metadata.class_fields.end(),
+                  [](const auto &field)
+                  {
+                    return field.name == "nested" && field.owner_type == "Probe" &&
+                        field.representation ==
+                            sagan::language_service::debug_value_representation::unavailable;
+                  }),
+          "Class field metadata did not distinguish direct scalar and nested values");
+
   const std::string exception_text =
       "hope scream \"caught\"\n"
       "unless \"caught\" print(\"handled\")\n"

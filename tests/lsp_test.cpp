@@ -64,6 +64,8 @@ auto main() -> int
                   ->string() == "sagan-package-auto-import-v1" &&
               initialized.get("experimental")->get("compiler")->get("debugExceptionSchema")
                   ->string() == "sagan-dap-exceptions-v1" &&
+              initialized.get("experimental")->get("compiler")->get("debugClassFieldsSchema")
+                  ->string() == "sagan-dap-class-fields-v1" &&
               initialized.get("experimental")->get("compiler")->get("capabilities")
                   ->get("packageCompletion")->boolean() == true &&
               initialized.get("experimental")->get("compiler")->get("capabilities")
@@ -71,7 +73,9 @@ auto main() -> int
               initialized.get("experimental")->get("compiler")->get("capabilities")
                   ->get("packageAutoImport")->boolean() == true &&
               initialized.get("experimental")->get("compiler")->get("capabilities")
-                  ->get("debugExceptions")->boolean() == true,
+                  ->get("debugExceptions")->boolean() == true &&
+              initialized.get("experimental")->get("compiler")->get("capabilities")
+                  ->get("debugClassFields")->boolean() == true,
           "initialize did not advertise implemented hover support");
   const auto catalog_uri = sagan::source::identity_from_path(
       sagan::source::document_id{}, "tests/fixtures/package_index/index.tsv").uri.value;

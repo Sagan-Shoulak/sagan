@@ -98,6 +98,8 @@ independently versioned true capabilities. The
 breakpoint mapping library is available. `debugExceptions` is true only for the
 opt-in raised Sagan exception filter; aggregate adapter/launch, breakpoint,
 stepping, variable, evaluation, attach, and optimized-local flags remain false.
+`debugClassFields` is independently true for stop-scoped expansion of direct
+scalar and String fields on initialized local class values.
 
 For an open document named `sagan.toml`, the server now validates the unsaved
 buffer with the same manifest parser used for disk builds and publishes
