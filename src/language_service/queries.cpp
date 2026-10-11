@@ -490,7 +490,8 @@ namespace sagan::language_service
                                               std::move(links));
   }
 
-  auto document_queries::completions(const source::byte_offset offset) const
+  auto document_queries::completions(const source::byte_offset offset,
+                                     const bool include_auto_imports) const
     -> diagnostics::analysis_result<std::vector<completion_item>>
   {
     if (document_.version() != index_.version() || document_.identity().id != index_.document().id)
@@ -739,7 +740,7 @@ namespace sagan::language_service
       if (scope_id == 0) break;
       scope_id = scope.parent;
     }
-    if (workspace_ && tree_ && strict_syntax_)
+    if (include_auto_imports && workspace_ && tree_ && strict_syntax_)
     {
       std::string current_module;
       if (!tree_->statements.empty())

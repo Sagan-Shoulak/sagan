@@ -12,6 +12,9 @@
 
 namespace sagan::language_service
 {
+  inline constexpr std::string_view package_completion_schema_version =
+      "sagan-package-completion-v1";
+
   struct check_options
   {
     bool check_types{true};

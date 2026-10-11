@@ -15,8 +15,10 @@ Installed packages can now be imported through a locked dependency alias.
 The workspace semantic index marks installed dependency modules as external.
 F2 may rename an alias declared in the current project, but it refuses to
 propose source edits to an installed dependency or its exported declarations.
-The complete contextual completion contract is still unfinished, so
-`packageCompletion`, `packageNavigation`, and `packageAutoImport` remain false.
+Installed-package completion has passed its first complete compiler/LSP gate
+and is advertised as `packageCompletion` with schema
+`sagan-package-completion-v1`. `packageNavigation` and `packageAutoImport`
+remain false and must be negotiated independently.
 
 A compiler library selector accepts a project manifest, local index,
 compiler version, and optional `sagan.lock`. Its lockfile format is
@@ -73,24 +75,12 @@ member completion on a value whose declared type comes from an imported
 package also uses the workspace's resolved type binding. Public methods carry
 their compiler-indexed signatures and owning module; this is tested through
 both library queries and standard LSP completion. The workspace snapshot must
-match the open document version before its type binding is used. Unqualified
-exported-name suggestions carry those signatures and a compiler-produced
-import edit. That edit is offered only for strictly parsed documents with a
-safe module-header insertion line, preserves the document's line ending, and
-avoids names already declared anywhere in the document. Recovered syntax or
-an unproven module-header insertion line does not receive an edit. Edits are
-produced through the same versioned, previewed `add_missing_import` planner
-used by code actions; a candidate is omitted when that planner cannot prove
-the import resolves uniquely after insertion. These are
-tested slices, not a claim that every contextual completion or import-edit
-case is safe yet. When different modules export the same unqualified name,
-completion keeps separate, deterministically ordered candidates with explicit
-`from` imports; standard LSP `detail` names each source module. Importing a
-module as a namespace does not suppress its unqualified auto-import candidate.
-An exported overload set is one importable public name: completion provides
-one candidate and the safe planner accepts any overload identity in that set
-only when the public export and resulting imported binding are unique. Its
-completion detail lists the distinct callable signatures in that set.
+match the open document version before its type binding is used. The compiler
+library retains an experimental import-edit planner for unqualified exported
+names. Standard LSP completion deliberately omits those edit-bearing
+candidates while `packageAutoImport` is false, preventing clients from
+accidentally exposing unfinished auto-import behavior through ordinary
+completion. The planner remains a tested foundation for its separate gate.
 An incomplete `import` or `from` module path also receives
 compiler-owned module suggestions
 from the local source tree and locked installed dependencies, even if the
@@ -111,8 +101,9 @@ before disk source. Non-exported declarations are excluded. An unreadable or
 incomplete imported module reports an error rather than an invented API.
 For an unavailable module, standard LSP completion returns an empty list
 instead of a protocol error; structured import diagnostics remain available.
-This is a tested subset of package completion, not the full `packageCompletion`
-capability.
+These bounded import/export queries, qualified/member results, source overlays,
+signatures, and graceful unavailable-source behavior form the versioned
+`packageCompletion` capability.
 Go-to-definition on a module path in an `import` statement resolves to the
 module's source URI and UTF-16 `module` declaration range, including installed
 package modules. The same query honors source overlays and prefers the local

@@ -194,7 +194,7 @@ namespace sagan::language_service
       -> diagnostics::analysis_result<std::vector<semantic_classification>>;
     auto folding_regions() const -> diagnostics::analysis_result<std::vector<folding_region>>;
     auto import_links() const -> diagnostics::analysis_result<std::vector<document_link>>;
-    auto completions(source::byte_offset offset) const
+    auto completions(source::byte_offset offset, bool include_auto_imports = true) const
       -> diagnostics::analysis_result<std::vector<completion_item>>;
     auto signature_help(source::byte_offset offset) const
       -> diagnostics::analysis_result<signature_information>;

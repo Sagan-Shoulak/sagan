@@ -92,7 +92,8 @@ namespace sagan::language_service
            << codegen::source_map_schema_version << "\",\"debugMetadataSchema\":\""
            << debug_metadata_schema_version << "\",\"breakpointMappingSchema\":\""
            << dap::breakpoint_mapping_schema << "\",\"packageCatalogSchema\":\""
-           << package_catalog_schema << "\",\"debugAdapterExecutable\":\""
+           << package_catalog_schema << "\",\"packageCompletionSchema\":\""
+           << package_completion_schema_version << "\",\"debugAdapterExecutable\":\""
 #ifdef _WIN32
            << "sagan-dap.exe"
 #else
@@ -117,7 +118,7 @@ namespace sagan::language_service
            << ",\"testDocumentDiscovery\":true,\"testProjectDiscovery\":true"
            << ",\"testDocumentRun\":true,\"testProjectRun\":true,\"testExplorer\":false"
             << ",\"packageIndexReader\":true,\"packageQuery\":true,\"packageCatalog\":true"
-            << ",\"packageCompletion\":false,\"packageNavigation\":false"
+            << ",\"packageCompletion\":true,\"packageNavigation\":false"
             << ",\"packageAutoImport\":false"
            << ",\"languageServer\":" << boolean(value.language_server) << "}}\n";
     return output.str();
