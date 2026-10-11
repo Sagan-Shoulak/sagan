@@ -1140,6 +1140,16 @@ namespace codegen
             unbox(declaration->name);
             output << "const " << type_name(checked_type, declaration->range) << ' '
                    << identifier(declaration->name) << " = " << initializer << ";\n";
+            if (checked_type.starts_with("Array<") && checked_type.ends_with('>'))
+            {
+              const auto element = checked_type.substr(6, checked_type.size() - 7);
+              if (element == "Bool" || element == "String" || element.starts_with("Int") ||
+                  element.starts_with("UInt") || element.starts_with("Float"))
+                output << indentation() << "#ifdef SAGAN_DEBUG_ARRAY_VIEW\n" << indentation()
+                       << "sagan_debug_array_view<" << type_name(element, declaration->range) << "> "
+                       << generated_debug_array_identifier(declaration->name) << '('
+                       << identifier(declaration->name) << ");\n" << indentation() << "#endif\n";
+            }
           }
           else
           {
@@ -2073,6 +2083,20 @@ namespace codegen
                   "#ifdef _WIN32\n"
                   "#include <windows.h>\n"
                   "#endif\n\n"
+                  "#ifdef SAGAN_DEBUG_ARRAY_VIEW\n"
+                  "template <typename T>\n"
+                  "struct sagan_debug_array_view\n"
+                  "{\n"
+                  "  std::size_t count{};\n"
+                  "  T *data{};\n"
+                  "  explicit sagan_debug_array_view(const std::vector<T> &values)\n"
+                  "      : count(values.size()), data(count == 0 || count > 256 ? nullptr : new T[count])\n"
+                  "  { if (data) for (std::size_t index = 0; index < count; ++index) data[index] = values[index]; }\n"
+                  "  sagan_debug_array_view(const sagan_debug_array_view &) = delete;\n"
+                  "  auto operator=(const sagan_debug_array_view &) -> sagan_debug_array_view & = delete;\n"
+                  "  ~sagan_debug_array_view() { delete[] data; }\n"
+                  "};\n"
+                  "#endif\n\n"
                   "void sagan_initialize_runtime()\n"
                   "{\n"
                   "#ifdef _WIN32\n"
@@ -2940,6 +2964,11 @@ namespace codegen
     encoded << "sagan_" << std::hex << std::setfill('0');
     for (const unsigned char byte : name) encoded << std::setw(2) << static_cast<unsigned int>(byte);
     return encoded.str();
+  }
+
+  auto generated_debug_array_identifier(const std::string_view name) -> std::string
+  {
+    return "sagan_debug_array_" + generated_identifier(name);
   }
 
   auto generate_cpp_mapped(const parser::program &tree, const semantic::type_model &types,

@@ -339,6 +339,12 @@ for direct scalar/String field expansion, and `debugMemberEvaluate` covers an
 exact local plus one direct field. Aggregate variable/evaluation flags stay false.
 `debugNestedClass` adds a single class-valued child expansion depth and does
 not imply recursive object or collection traversal.
+`sagan-dap-array-view-v1` adds compiler-owned metadata for constant local
+scalar/String arrays and names the generated debug-only view used for bounded,
+stop-scoped indexed expansion. The generated view owns a snapshot of at most
+the adapter's supported 256 elements, so the adapter neither depends on
+`std::vector` internals nor executes inferior calls. `debugArrayView` is true;
+the aggregate variable and evaluation flags remain false.
 Explicit `test "name" { ... }`
 declarations now parse and type-check, and `tests.hpp` discovers them in a
 document or resolved project with stable ID, URI, UTF-16 name range, and

@@ -116,6 +116,17 @@ continue or a new stop. A second class-valued hop is omitted, so recursion,
 cycles, inherited/generated fields, collections, and general object traversal
 remain unsupported. `debugNestedClass` is true only for this depth-one contract.
 
+The independently versioned `sagan-dap-array-view-v1` slice expands initialized
+local constant `Array<Bool>`, `Array<numeric>`, and `Array<String>` values into
+zero-based indexed children. Debug builds emit a Sagan-owned snapshot with an
+explicit element pointer and count; DAP never reads private standard-library
+layout or calls into the debuggee. Requests may page with `start` and `count`,
+out-of-bounds starts fail, and arrays over 256 elements fail closed. References
+are valid only for the current stop. Mutable arrays, nested collections, class
+elements, mutation, index evaluation, optimized storage, and general collection
+semantics remain unsupported. `debugArrayView` is true only for this contract;
+`debugVariables` and `debugEvaluate` remain false.
+
 The Windows prototype uses GDB 16.3's native DAP interpreter behind a
 Sagan-owned service. The service, not the editor, builds the selected source
 or package, retains its generated-code map, resolves Sagan breakpoints, maps

@@ -248,6 +248,7 @@ namespace sagan::dap
       std::size_t index{};
       std::string expression;
       std::string type;
+      bool indexed_count{};
     };
 
     struct pending_variable_batch
@@ -268,6 +269,22 @@ namespace sagan::dap
       std::string owner_type;
       std::string native_object;
       std::size_t depth{};
+    };
+
+    struct array_view_reference
+    {
+      std::int64_t frame_id{};
+      std::uint64_t stop_generation{};
+      std::string element_type;
+      std::string generated_view;
+    };
+
+    struct pending_array_count
+    {
+      std::int64_t client_seq{};
+      array_view_reference view;
+      std::optional<std::int64_t> start;
+      std::optional<std::int64_t> count;
     };
 
     class session
@@ -296,6 +313,8 @@ namespace sagan::dap
       std::map<std::int64_t, std::int64_t> variable_requests_;
       std::map<std::int64_t, pending_variable_batch> pending_variable_batches_;
       std::map<std::int64_t, class_field_reference> class_field_references_;
+      std::map<std::int64_t, array_view_reference> array_view_references_;
+      std::map<std::int64_t, pending_array_count> pending_array_counts_;
       std::map<std::int64_t, std::int64_t> pending_exception_breakpoints_;
       std::map<std::int64_t, std::int64_t> stack_threads_;
       std::map<std::int64_t, source_location> last_location_;
@@ -442,6 +461,32 @@ namespace sagan::dap
             !lifetime_end || frame_location->line > static_cast<std::int64_t>(lifetime_end->line + 1))
           return {};
         return "(*(" + known.generated_name + "._M_ptr))._M_ptr";
+      }
+
+      auto array_view_expression(const language_service::debug_variable &known,
+                                 const language_service::debug_array_view &view,
+                                 const std::int64_t frame_id) -> std::optional<std::string>
+      {
+        if (known.representation != language_service::debug_value_representation::direct_value)
+          return {};
+        std::optional<source_location> frame_location;
+        {
+          std::scoped_lock lock(state_mutex_);
+          if (const auto it = frame_locations_.find(frame_id); it != frame_locations_.end())
+            frame_location = it->second;
+        }
+        if (!frame_location || !known.source_path ||
+            path_from_utf8(frame_location->path).lexically_normal() !=
+                known.source_path->lexically_normal()) return {};
+        const auto source_document = source_.read_path(*known.source_path);
+        const auto declared_end = source_document ?
+            source_document.value->to_utf16(known.declaration.bytes.end) : std::nullopt;
+        const auto lifetime_end = source_document ?
+            source_document.value->to_utf16(known.lifetime.bytes.end) : std::nullopt;
+        if (!declared_end || frame_location->line <= static_cast<std::int64_t>(declared_end->line + 1) ||
+            !lifetime_end || frame_location->line > static_cast<std::int64_t>(lifetime_end->line + 1))
+          return {};
+        return view.generated_name;
       }
 
       auto forward(const J &request) -> void
@@ -1049,6 +1094,7 @@ namespace sagan::dap
       std::optional<std::int64_t> scope_frame;
       std::optional<std::int64_t> variable_frame;
       std::optional<pending_variable_batch> pending_values;
+      std::optional<pending_array_count> pending_array;
       std::optional<std::int64_t> exception_client;
       {
         std::scoped_lock lock(state_mutex_);
@@ -1065,6 +1111,9 @@ namespace sagan::dap
         if (const auto it = pending_variable_batches_.find(native_seq);
             it != pending_variable_batches_.end())
         { pending_values = std::move(it->second); pending_variable_batches_.erase(it); }
+        if (const auto it = pending_array_counts_.find(native_seq);
+            it != pending_array_counts_.end())
+        { pending_array = std::move(it->second); pending_array_counts_.erase(it); }
         if (const auto it = pending_exception_breakpoints_.find(native_seq);
             it != pending_exception_breakpoints_.end())
         { exception_client = it->second; pending_exception_breakpoints_.erase(it); }
@@ -1086,9 +1135,23 @@ namespace sagan::dap
         if (field(message, "success").boolean().value_or(false))
         {
           auto variable = object_copy(pending_values->variables.at(probe.index));
-          variable.insert_or_assign("value", scalar_text(probe.type,
-              string_field(field(message, "body"), "result")));
-          variable.insert_or_assign("type", probe.type);
+          const auto result = string_field(field(message, "body"), "result");
+          if (probe.indexed_count)
+          {
+            try
+            {
+              const auto count = std::stoull(result);
+              variable.insert_or_assign("indexedVariables", static_cast<std::int64_t>(count));
+              variable.insert_or_assign("value", string_field(J(variable), "value") + " (" +
+                                                    std::to_string(count) + " elements)");
+            }
+            catch (const std::exception &) {}
+          }
+          else
+          {
+            variable.insert_or_assign("value", scalar_text(probe.type, result));
+            variable.insert_or_assign("type", probe.type);
+          }
           pending_values->variables[probe.index] = variable;
         }
         ++pending_values->next;
@@ -1098,6 +1161,78 @@ namespace sagan::dap
         pending_values->response.insert_or_assign("body", pending_values->body);
         pending_values->response.insert_or_assign("seq", next_seq_++);
         send(pending_values->response);
+        return;
+      }
+      if (forwarded_command == "internalArrayCount" && pending_array)
+      {
+        std::uint64_t current_generation{};
+        {
+          std::scoped_lock lock(state_mutex_);
+          current_generation = stop_generation_;
+        }
+        if (pending_array->view.stop_generation != current_generation)
+        {
+          response(pending_array->client_seq, "variables", false, {},
+                   "Sagan array reference is no longer valid");
+          return;
+        }
+        if (!field(message, "success").boolean().value_or(false))
+        {
+          response(pending_array->client_seq, "variables", false, {},
+                   "Sagan array size is unavailable in this stack frame");
+          return;
+        }
+        std::size_t size{};
+        try { size = std::stoull(string_field(field(message, "body"), "result")); }
+        catch (const std::exception &)
+        {
+          response(pending_array->client_seq, "variables", false, {},
+                   "Sagan array size could not be decoded");
+          return;
+        }
+        constexpr std::size_t maximum_array_elements = 256;
+        if (size > maximum_array_elements)
+        {
+          response(pending_array->client_seq, "variables", false, {},
+                   "Sagan array exceeds the 256-element debugger limit");
+          return;
+        }
+        const auto start = static_cast<std::size_t>(pending_array->start.value_or(0));
+        if (start > size)
+        {
+          response(pending_array->client_seq, "variables", false, {},
+                   "Sagan array start index is out of bounds");
+          return;
+        }
+        const auto requested = pending_array->count.value_or(static_cast<std::int64_t>(size - start));
+        const auto finish = requested == 0 ? size :
+            std::min(size, start + static_cast<std::size_t>(requested));
+        J::array variables;
+        std::vector<scalar_probe> probes;
+        for (auto index = start; index < finish; ++index)
+        {
+          auto expression = pending_array->view.generated_view + ".data[" +
+              std::to_string(index) + "]";
+          if (pending_array->view.element_type.starts_with("Int"))
+            expression = "static_cast<long long>(" + expression + ")";
+          else if (pending_array->view.element_type.starts_with("UInt"))
+            expression = "static_cast<unsigned long long>(" + expression + ")";
+          else if (pending_array->view.element_type.starts_with("Float"))
+            expression = "static_cast<double>(" + expression + ")";
+          variables.emplace_back(J::object{{"name", "[" + std::to_string(index) + "]"},
+                                            {"type", pending_array->view.element_type},
+                                            {"value", "<value unavailable>"},
+                                            {"variablesReference", 0}});
+          probes.push_back({variables.size() - 1, std::move(expression),
+                            pending_array->view.element_type});
+        }
+        auto body = J::object{{"variables", variables}};
+        auto answer = J::object{{"type", "response"},
+                                {"request_seq", pending_array->client_seq},
+                                {"command", "variables"}, {"success", true}};
+        if (probes.empty()) response(pending_array->client_seq, "variables", true, body);
+        else send_variable_probe({answer, body, variables, std::move(probes), 0,
+                                  pending_array->view.frame_id, current_generation});
         return;
       }
       if (forwarded_command == "internalInitialize") return;
@@ -1288,7 +1423,25 @@ namespace sagan::dap
               }
               else if (variable_frame)
               {
-                const auto native_object = class_object_expression(*selected, *variable_frame);
+                bool structured = false;
+                const auto array = std::find_if(build->debug->array_views.begin(),
+                    build->debug->array_views.end(), [&](const auto &entry)
+                    { return entry.symbol == selected->symbol; });
+                if (array != build->debug->array_views.end())
+                  if (const auto native_view = array_view_expression(*selected, *array, *variable_frame))
+                  {
+                    std::scoped_lock lock(state_mutex_);
+                    const auto reference = next_class_field_reference_++;
+                    array_view_references_.insert_or_assign(reference,
+                        array_view_reference{*variable_frame, stop_generation_, array->element_type,
+                                             *native_view});
+                    variable.insert_or_assign("value", "<" + selected->type + ">");
+                    variable.insert_or_assign("variablesReference", reference);
+                    probes.push_back({visible.size(), *native_view + ".count", "UInt64", true});
+                    structured = true;
+                  }
+                const auto native_object = structured ? std::optional<std::string>{} :
+                    class_object_expression(*selected, *variable_frame);
                 const auto has_direct_fields = [&](const std::string &type)
                 {
                   return std::any_of(build->debug->class_fields.begin(),
@@ -1308,7 +1461,7 @@ namespace sagan::dap
                                language_service::debug_value_representation::direct_value ||
                            has_direct_fields(field.type));
                     }));
-                if (native_object && field_count > 0)
+                if (!structured && native_object && field_count > 0)
                 {
                   std::scoped_lock lock(state_mutex_);
                   const auto reference = next_class_field_reference_++;
@@ -1418,6 +1571,8 @@ namespace sagan::dap
               frame_locations_.clear();
               variable_frames_.clear();
               class_field_references_.clear();
+              array_view_references_.clear();
+              pending_array_counts_.clear();
               visible_parameters_.clear();
               ++stop_generation_;
               stopped_thread_ = thread_id;
@@ -1470,6 +1625,8 @@ namespace sagan::dap
             frame_locations_.clear();
             variable_frames_.clear();
             class_field_references_.clear();
+            array_view_references_.clear();
+            pending_array_counts_.clear();
             visible_parameters_.clear();
             ++stop_generation_;
             if (stepping_) continue;
@@ -1670,12 +1827,59 @@ namespace sagan::dap
         {
           const auto reference = integer_field(field(request, "arguments"), "variablesReference");
           std::optional<class_field_reference> expansion;
+          std::optional<array_view_reference> array_expansion;
           std::shared_ptr<language_service::native_operation_result> build;
           {
             std::scoped_lock lock(state_mutex_);
             build = build_;
+            if (const auto found = array_view_references_.find(reference);
+                found != array_view_references_.end()) array_expansion = found->second;
             if (const auto found = class_field_references_.find(reference);
                 found != class_field_references_.end()) expansion = found->second;
+          }
+          if (array_expansion)
+          {
+            std::uint64_t generation{};
+            {
+              std::scoped_lock lock(state_mutex_);
+              generation = stop_generation_;
+            }
+            if (array_expansion->stop_generation != generation)
+            {
+              response(seq, command, false, {}, "Sagan array reference is no longer valid");
+              return true;
+            }
+            const auto &arguments = field(request, "arguments");
+            const auto start = field(arguments, "start").integer();
+            const auto count = field(arguments, "count").integer();
+            if ((start && *start < 0) || (count && *count < 0))
+            {
+              response(seq, command, false, {}, "Sagan array range must be non-negative");
+              return true;
+            }
+            const auto native_seq = next_seq_++;
+            {
+              std::scoped_lock lock(state_mutex_);
+              forwarded_.insert_or_assign(native_seq, "internalArrayCount");
+              pending_array_counts_.insert_or_assign(native_seq,
+                  pending_array_count{seq, *array_expansion, start, count});
+            }
+            try
+            {
+              gdb_send(J::object{{"seq", native_seq}, {"type", "request"},
+                                 {"command", "evaluate"},
+                                 {"arguments", J::object{{"frameId", array_expansion->frame_id},
+                                     {"expression", array_expansion->generated_view + ".count"},
+                                     {"context", "watch"}}}});
+            }
+            catch (...)
+            {
+              std::scoped_lock lock(state_mutex_);
+              forwarded_.erase(native_seq);
+              pending_array_counts_.erase(native_seq);
+              throw;
+            }
+            return true;
           }
           if (!expansion)
           {

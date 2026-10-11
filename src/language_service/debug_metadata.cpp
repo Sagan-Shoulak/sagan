@@ -134,6 +134,16 @@ namespace sagan::language_service
                                     range_for(id_for(path), lifetime), path,
                                     symbol.kind == semantic::symbol_kind::parameter,
                                     representation, false});
+        if (symbol.kind == semantic::symbol_kind::constant && symbol.scope_id != 0 &&
+            type.starts_with("Array<") &&
+            type.ends_with('>'))
+        {
+          const auto element = type.substr(6, type.size() - 7);
+          if (element == "Bool" || element == "String" || element.starts_with("Int") ||
+              element.starts_with("UInt") || element.starts_with("Float"))
+            result.array_views.push_back({symbol.id, element,
+                                          codegen::generated_debug_array_identifier(symbol.name)});
+        }
       }
     for (const auto &scope : model.scopes)
     {

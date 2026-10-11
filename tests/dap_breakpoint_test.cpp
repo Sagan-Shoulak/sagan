@@ -47,6 +47,10 @@ auto main() -> int
       "  let ready: Bool\n"
       "  let label: String\n"
       "  let nested: Nested\n"
+      "}\n"
+      "fun arrays(): Int {\n"
+      "  const READINGS = [1, 2, 3]\n"
+      "  return READINGS[0]\n"
       "}\n";
   const sagan::source::document_snapshot class_document(
       {{sagan::source::document_id{3}, sagan::source::document_uri{"untitled:dap-class-fields"}, {}},
@@ -84,6 +88,15 @@ auto main() -> int
                         sagan::language_service::debug_value_representation::direct_value;
               }),
           "Nested class metadata did not retain its own direct scalar field");
+  require(class_metadata.array_views.size() == 1 &&
+              class_metadata.array_views.front().element_type == "Int8" &&
+              class_metadata.array_views.front().generated_name ==
+                  codegen::generated_debug_array_identifier("READINGS"),
+          "Constant scalar Array did not produce a stable debugger view");
+  require(class_cpp.text.find("#ifdef SAGAN_DEBUG_ARRAY_VIEW") != std::string::npos &&
+              class_cpp.text.find(codegen::generated_debug_array_identifier("READINGS")) !=
+                  std::string::npos,
+          "Generated C++ omitted the debug-only Array view");
 
   const std::string exception_text =
       "hope scream \"caught\"\n"
