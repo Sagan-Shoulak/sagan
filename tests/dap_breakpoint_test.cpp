@@ -50,7 +50,17 @@ auto main() -> int
       "}\n"
       "fun arrays(): Int {\n"
       "  const READINGS = [1, 2, 3]\n"
-      "  return READINGS[0]\n"
+      "  let values = [4, 5, 6]\n"
+      "  let other = [7, 8]\n"
+      "  let first, second = [14], [15, 16]\n"
+      "  let nested = [[17]]\n"
+      "  values[1] = 9\n"
+      "  (values)[0] += 1\n"
+      "  values = [10, 11]\n"
+      "  let assigned = values := [12, 13]\n"
+      "  values, other = other, values\n"
+      "  values[0]++\n"
+      "  return READINGS[0] + assigned[0]\n"
       "}\n";
   const sagan::source::document_snapshot class_document(
       {{sagan::source::document_id{3}, sagan::source::document_uri{"untitled:dap-class-fields"}, {}},
@@ -88,15 +98,25 @@ auto main() -> int
                         sagan::language_service::debug_value_representation::direct_value;
               }),
           "Nested class metadata did not retain its own direct scalar field");
-  require(class_metadata.array_views.size() == 1 &&
-              class_metadata.array_views.front().element_type == "Int8" &&
-              class_metadata.array_views.front().generated_name ==
-                  codegen::generated_debug_array_identifier("READINGS"),
-          "Constant scalar Array did not produce a stable debugger view");
+  require(class_metadata.array_views.size() == 6 &&
+              std::all_of(class_metadata.array_views.begin(), class_metadata.array_views.end(),
+                  [](const auto &view) { return view.element_type == "Int8"; }) &&
+              std::any_of(class_metadata.array_views.begin(), class_metadata.array_views.end(),
+                  [](const auto &view)
+                  { return view.generated_name == codegen::generated_debug_array_identifier("values"); }) &&
+              std::any_of(class_metadata.array_views.begin(), class_metadata.array_views.end(),
+                  [](const auto &view)
+                  { return view.generated_name == codegen::generated_debug_array_identifier("first"); }),
+          "Local scalar Arrays did not produce stable debugger views");
   require(class_cpp.text.find("#ifdef SAGAN_DEBUG_ARRAY_VIEW") != std::string::npos &&
               class_cpp.text.find(codegen::generated_debug_array_identifier("READINGS")) !=
-                  std::string::npos,
-          "Generated C++ omitted the debug-only Array view");
+                  std::string::npos &&
+              class_cpp.text.find(codegen::generated_debug_array_identifier("values")) !=
+                  std::string::npos &&
+              class_cpp.text.find("SAGAN_DEBUG_ARRAY_REFRESH") != std::string::npos &&
+              class_cpp.text.find("sagan_debug_assignment_") != std::string::npos &&
+              class_cpp.text.find("sagan_debug_mutation_") != std::string::npos,
+          "Generated C++ omitted mutable debug-only Array synchronization");
 
   const std::string exception_text =
       "hope scream \"caught\"\n"

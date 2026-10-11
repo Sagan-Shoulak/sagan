@@ -467,7 +467,8 @@ namespace sagan::dap
                                  const language_service::debug_array_view &view,
                                  const std::int64_t frame_id) -> std::optional<std::string>
       {
-        if (known.representation != language_service::debug_value_representation::direct_value)
+        if (known.representation != language_service::debug_value_representation::direct_value &&
+            known.representation != language_service::debug_value_representation::shared_value)
           return {};
         std::optional<source_location> frame_location;
         {

@@ -579,6 +579,17 @@ def local_scalar_values(binary, gdb):
             "  const COUNTS = [3, 5, 8]\n"
             "  const FLAGS = [true, false]\n"
             "  const LABELS = [\"alpha\", \"beta 🚀\"]\n"
+            "  let indexed = [3, 5, 8]\n"
+            "  indexed[1] = 13\n"
+            "  let whole = [1, 2]\n"
+            "  whole = [21, 34]\n"
+            "  let expression = [1]\n"
+            "  let assigned = expression := [55, 89]\n"
+            "  let parallel_left = [2]\n"
+            "  let parallel_right = [3, 4]\n"
+            "  parallel_left, parallel_right = parallel_right, parallel_left\n"
+            "  let incremented = [7]\n"
+            "  incremented[0]++\n"
             "  let probe = Probe(value + 40, ready, label)\n"
             "  print(local)\n"
             "  return local\n"
@@ -616,7 +627,7 @@ def local_scalar_values(binary, gdb):
             expect(lambda item: item.get("event") == "initialized")
             send(2, "launch", {"program": str(source)})
             send(3, "setBreakpoints", {"source": {"path": str(source)},
-                                       "breakpoints": [{"line": 40}, {"line": 41}, {"line": 42}]})
+                                       "breakpoints": [{"line": 51}, {"line": 52}, {"line": 53}]})
             assert expect(lambda item: item.get("request_seq") == 3)["success"]
             send(4, "configurationDone")
             assert expect(lambda item: item.get("request_seq") == 4)["success"]
@@ -624,7 +635,7 @@ def local_scalar_values(binary, gdb):
             preinit = expect(lambda item: item.get("event") == "stopped")
             send(22, "stackTrace", {"threadId": preinit["body"]["threadId"]})
             preinit_stack = expect(lambda item: item.get("request_seq") == 22)
-            assert preinit_stack["body"]["stackFrames"][0]["line"] == 40, preinit_stack
+            assert preinit_stack["body"]["stackFrames"][0]["line"] == 51, preinit_stack
             send(23, "evaluate", {"frameId": preinit_stack["body"]["stackFrames"][0]["id"],
                                    "expression": "probe.count", "context": "hover"})
             assert not expect(lambda item: item.get("request_seq") == 23)["success"]
@@ -633,7 +644,7 @@ def local_scalar_values(binary, gdb):
             stopped = expect(lambda item: item.get("event") == "stopped")
             send(5, "stackTrace", {"threadId": stopped["body"]["threadId"]})
             stack = expect(lambda item: item.get("request_seq") == 5)
-            assert stack["body"]["stackFrames"][0]["line"] == 41, stack
+            assert stack["body"]["stackFrames"][0]["line"] == 52, stack
             frame_id = stack["body"]["stackFrames"][0]["id"]
             send(6, "scopes", {"frameId": frame_id})
             scopes = expect(lambda item: item.get("request_seq") == 6)
@@ -652,7 +663,9 @@ def local_scalar_values(binary, gdb):
                 for item in values["body"]["variables"]:
                     if item["name"] == "probe":
                         probe_reference = item["variablesReference"]
-                    if item["name"] in ("COUNTS", "FLAGS", "LABELS"):
+                    if item["name"] in ("COUNTS", "FLAGS", "LABELS", "indexed", "whole",
+                                        "expression", "assigned", "parallel_left",
+                                        "parallel_right", "incremented"):
                         array_references[item["name"]] = item["variablesReference"]
                         array_counts[item["name"]] = item.get("indexedVariables")
             assert observed.get("local") == "7" and observed.get("value") == "2", observed
@@ -660,9 +673,22 @@ def local_scalar_values(binary, gdb):
             assert observed.get("message") == '"launch 🚀 \\\\360"', observed
             assert observed.get("label") == '"ship 🚀"', observed
             assert probe_reference > 0 and observed.get("probe") == "<Probe>", observed
+            expected_array_values = {
+                "COUNTS": ["3", "5", "8"],
+                "FLAGS": ["true", "false"],
+                "LABELS": ['"alpha"', '"beta 🚀"'],
+                "indexed": ["3", "13", "8"],
+                "whole": ["21", "34"],
+                "expression": ["55", "89"],
+                "assigned": ["55", "89"],
+                "parallel_left": ["3", "4"],
+                "parallel_right": ["2"],
+                "incremented": ["8"],
+            }
             assert all(array_references.get(name, 0) > 0
-                       for name in ("COUNTS", "FLAGS", "LABELS")), array_references
-            assert array_counts == {"COUNTS": 3, "FLAGS": 2, "LABELS": 2}, array_counts
+                       for name in expected_array_values), array_references
+            assert array_counts == {name: len(values)
+                                    for name, values in expected_array_values.items()}, array_counts
             send(32, "variables", {"variablesReference": array_references["COUNTS"],
                                     "start": 1, "count": 2})
             count_items = expect(lambda item: item.get("request_seq") == 32)
@@ -680,6 +706,15 @@ def local_scalar_values(binary, gdb):
             assert label_items["success"] and \
                 [item["value"] for item in label_items["body"]["variables"]] == \
                 ['"alpha"', '"beta 🚀"'], label_items
+            for sequence, name in enumerate(("indexed", "whole", "expression", "assigned",
+                                             "parallel_left", "parallel_right", "incremented"),
+                                            start=37):
+                send(sequence, "variables", {"variablesReference": array_references[name]})
+                mutable_items = expect(lambda item, expected=sequence:
+                                       item.get("request_seq") == expected)
+                assert mutable_items["success"] and \
+                    [item["value"] for item in mutable_items["body"]["variables"]] == \
+                    expected_array_values[name], (name, mutable_items)
             assert all(item["variablesReference"] == 0
                        for response in (count_items, flag_items, label_items)
                        for item in response["body"]["variables"])
