@@ -14,6 +14,8 @@ namespace sagan::language_service
 {
   inline constexpr std::string_view package_completion_schema_version =
       "sagan-package-completion-v1";
+  inline constexpr std::string_view package_navigation_schema_version =
+      "sagan-package-navigation-v1";
 
   struct check_options
   {

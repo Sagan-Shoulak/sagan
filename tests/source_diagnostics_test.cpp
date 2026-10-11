@@ -169,6 +169,7 @@ auto main() -> int
                       capabilities.contains("\"breakpointMappingSchema\":\"sagan-dap-breakpoints-v1\"") &&
                       capabilities.contains("\"packageCatalogSchema\":\"sagan-package-catalog-v1\"") &&
                       capabilities.contains("\"packageCompletionSchema\":\"sagan-package-completion-v1\"") &&
+                      capabilities.contains("\"packageNavigationSchema\":\"sagan-package-navigation-v1\"") &&
                       capabilities.contains("\"debugAdapterExecutable\":\"sagan-dap") &&
                       capabilities.contains("\"nativeBuild\":true") &&
                       capabilities.contains("\"nativeRun\":true") &&
@@ -183,7 +184,7 @@ auto main() -> int
                       capabilities.contains("\"packageQuery\":true") &&
                       capabilities.contains("\"packageCatalog\":true") &&
                       capabilities.contains("\"packageCompletion\":true") &&
-                      capabilities.contains("\"packageNavigation\":false") &&
+                      capabilities.contains("\"packageNavigation\":true") &&
                       capabilities.contains("\"packageAutoImport\":false") &&
                       capabilities.contains("\"operationTransport\":true") &&
                       capabilities.contains("\"operationCancellation\":true"),

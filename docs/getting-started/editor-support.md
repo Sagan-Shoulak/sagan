@@ -80,9 +80,9 @@ configured compiler, in the repository `bin` directory, or through
 `sagan.server.path`.
 
 Package names and imported symbols have compiler-backed completion through the
-versioned `sagan-package-completion-v1` contract. Complete package navigation
-and safe package auto-import remain disabled capabilities; clients must not
-infer them from ordinary LSP support.
+versioned `sagan-package-completion-v1` contract. Installed-package navigation
+is separately advertised through `sagan-package-navigation-v1`. Safe package
+auto-import remains disabled; clients must not infer it from ordinary LSP support.
 Debugging is not available through the extension yet: the compiler's
 experimental adapter has not passed its release and capability gates.
 

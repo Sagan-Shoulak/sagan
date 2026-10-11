@@ -15,10 +15,11 @@ Installed packages can now be imported through a locked dependency alias.
 The workspace semantic index marks installed dependency modules as external.
 F2 may rename an alias declared in the current project, but it refuses to
 propose source edits to an installed dependency or its exported declarations.
-Installed-package completion has passed its first complete compiler/LSP gate
-and is advertised as `packageCompletion` with schema
-`sagan-package-completion-v1`. `packageNavigation` and `packageAutoImport`
-remain false and must be negotiated independently.
+Installed-package completion and navigation have passed their compiler/LSP gates
+and are advertised as `packageCompletion` with schema
+`sagan-package-completion-v1`, and as `packageNavigation` with schema
+`sagan-package-navigation-v1`. `packageAutoImport` remains false and must be
+negotiated independently.
 
 A compiler library selector accepts a project manifest, local index,
 compiler version, and optional `sagan.lock`. Its lockfile format is
@@ -115,9 +116,10 @@ invented target. When an import names an unavailable module, standard LSP
 definition returns an empty array rather than a broken filesystem URI or a
 protocol error; the compiler's structured import diagnostic still explains the
 failure. These queries honor the installed source overlay and reject
-cancelled or stale document versions. This does not yet cover every package alias,
-member, and source-unavailable navigation context, so `packageNavigation`
-remains false.
+cancelled or stale document versions. The versioned navigation gate additionally
+proves qualified package uses, imported and receiver types, local-module
+precedence over a dependency alias, missing-source behavior, source overlays,
+and independent resolution from multiple workspace roots.
 
 For `sagan.toml`, go-to-definition on the quoted `[package] entry` value now
 opens the corresponding local source module. The compiler parses the active

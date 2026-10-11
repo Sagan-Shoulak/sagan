@@ -92,7 +92,8 @@ dependencies into builds. Standard LSP now also serves incomplete module and
 selective-export imports plus go-to-definition on module paths. Export names
 inside selective imports also have source definition and hover targets,
 including incomplete importer documents and installed-source overlays.
-Package completion, package navigation, and package auto-import remain false. The
+Package completion and package navigation are versioned true capabilities;
+package auto-import remains false. The
 breakpoint mapping library is available, but every live DAP/debugger capability
 remains false until the adapter and release payload pass end-to-end tests.
 
