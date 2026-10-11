@@ -32,7 +32,11 @@ auto main() -> int
   const auto types = semantic::check_types(tree);
   const auto generated = codegen::generate_cpp_mapped(tree, types, "demo.sagan");
   require(generated.text.find("sagan_source_scope") != std::string::npos &&
+              generated.text.find("SAGAN_RUNTIME_DIAGNOSTICS_FILE") != std::string::npos &&
+              generated.text.find("sagan_write_runtime_diagnostic") != std::string::npos &&
               codegen::generate_cpp(tree, types).find("sagan_source_scope") == std::string::npos &&
+              codegen::generate_cpp(tree, types).find("SAGAN_RUNTIME_DIAGNOSTICS_FILE") ==
+                  std::string::npos &&
               !generated.mappings.empty() &&
               codegen::source_map_schema_version == std::string_view{"sagan-cpp-source-map-v1"},
           "mapped generation changed the generated C++ or lost its schema");
