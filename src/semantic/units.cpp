@@ -186,7 +186,7 @@ namespace semantic::units
   registry::registry()
   {
     for (const std::string name : {"Length", "Time", "Mass", "ElectricCurrent", "Temperature",
-                                   "AmountOfSubstance", "LuminousIntensity", "Angle"})
+                                   "AmountOfSubstance", "LuminousIntensity", "Angle", "Population"})
       dimensions_.emplace(name, base(name));
     const auto quantity = [&](std::string name, dimensions value)
     {
@@ -251,6 +251,7 @@ namespace semantic::units
     linear("candela", base("LuminousIntensity"), {1, 1}, {}, "cd", true);
     linear("radian", base("Angle"), {1, 1}, "Angle", "rad", true);
     linear("steradian", {{"Angle", 2}}, {1, 1}, "SolidAngle", "sr", true);
+    linear("person", base("Population"), {1, 1}, {}, "person");
 
     const auto derived = [&](std::string name, std::string quantity_name, std::string symbol)
     {

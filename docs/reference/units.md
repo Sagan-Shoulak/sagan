@@ -35,7 +35,8 @@ example, energy and torque have the same dimension exponents, but Sagan keeps
 them separate because they mean different things.
 
 Built-in dimensions are `Length`, `Time`, `Mass`, `ElectricCurrent`,
-`Temperature`, `AmountOfSubstance`, `LuminousIntensity`, and `Angle`.
+`Temperature`, `AmountOfSubstance`, `LuminousIntensity`, `Angle`, and
+`Population`.
 
 Named quantities include:
 
@@ -70,6 +71,7 @@ win before prefix splitting, so `kilogram` retains its standard meaning.
 | Family | Source spellings |
 | --- | --- |
 | Time and angle | `minute`, `hour`, `day`, `degree`, `arcminute`, `arcsecond` |
+| Population | `person` |
 | Area, volume, mass | `liter`, `tonne`, `hectare`, `barn` |
 | Distance and astronomy | `angstrom`, `astronomicalUnit`, `lightYear`, `parsec`, `nauticalMile` |
 | Speed and acceleration | `knot`, `gal` |
@@ -78,6 +80,10 @@ win before prefix splitting, so `kilogram` retains its standard meaning.
 | CGS laboratory units | `dyne`, `erg`, `gauss`, `poise`, `stokes` |
 | International customary | `inch`, `foot`, `yard`, `mile`, `poundMass`, `poundForce` |
 | Affine temperature | `Kelvin`, `Celsius`, `Fahrenheit`; differences use `Delta<...>` or `Δ<...>` |
+
+`person` has exact scale one and is not prefixable. Its distinct `Population`
+dimension makes rates such as `person / second` different from dimensionless
+scalars.
 
 Dynamic units, logarithmic units such as decibels, measurement uncertainty,
 calendar-dependent durations, fractional dimension exponents, and external unit
