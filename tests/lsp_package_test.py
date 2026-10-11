@@ -39,7 +39,13 @@ def run():
         send(process, {"jsonrpc": "2.0", "id": 1, "method": "initialize", "params": {
             "workspaceFolders": [{"uri": server_file_uri(project), "name": "consumer-alias"}],
         }})
-        assert answer(1)["capabilities"]["definitionProvider"]
+        initialized = answer(1)
+        assert initialized["capabilities"]["definitionProvider"]
+        compiler = initialized["experimental"]["compiler"]
+        assert compiler["packageCompletionSchema"] == "sagan-package-completion-v1", compiler
+        assert compiler["capabilities"]["packageCompletion"] is True, compiler
+        assert compiler["capabilities"]["packageNavigation"] is False, compiler
+        assert compiler["capabilities"]["packageAutoImport"] is False, compiler
         send(process, {"jsonrpc": "2.0", "method": "initialized", "params": {}})
         source = entry.read_text(encoding="utf-8")
         send(process, {"jsonrpc": "2.0", "method": "textDocument/didOpen", "params": {
@@ -230,12 +236,8 @@ def run():
                        "params": {"textDocument": {"uri": scratch_uri}, "position": {
                            "line": 2, "character": len("fun probe(): Int { ")}}})
         auto_imports = answer(17)
-        rocket = next((item for item in auto_imports if item["label"] == "🚀"), None)
-        assert rocket and rocket["additionalTextEdits"] == [{
-            "range": {"start": {"line": 1, "character": 0},
-                      "end": {"line": 1, "character": 0}},
-            "newText": "import 🚀 from orbit_tools.main\n",
-        }], auto_imports
+        assert not any(item.get("additionalTextEdits") for item in auto_imports), auto_imports
+        assert not any(item["label"] == "🚀" for item in auto_imports), auto_imports
         manifest_path = project / "sagan.toml"
         manifest_uri = server_file_uri(manifest_path)
         manifest_text = manifest_path.read_text(encoding="utf-8")

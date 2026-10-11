@@ -119,14 +119,12 @@ for continued local extension development:
   and safe quick fixes remain unavailable; extend tests as those capabilities
   become supported. The extension must not reproduce manifest parsing or
   validation in TypeScript.
-- Finish package completion in every relevant import, export, qualified-name,
-  type, expression, and receiver context. Add compiler-owned safe auto-import
-  edits, alias and collision handling, navigation when installed source is
-  missing, and focused multi-root conflict tests. Existing lockfile resolution,
-  selective-import navigation, catalog queries, and tested package hover,
-  definition, and completion cases are foundations rather than the completed
-  contract. Keep `packageCompletion`, `packageNavigation`, and
-  `packageAutoImport` false until their individual end-to-end gates pass.
+- Consume the versioned compiler-owned `packageCompletion` contract without
+  duplicating package semantics. Complete navigation when installed source is
+  missing and focused multi-root conflict tests under the separate
+  `packageNavigation` gate. Complete safe import edits plus alias and collision
+  handling under `packageAutoImport`. Keep those two flags false until their
+  individual end-to-end gates pass.
 - Finish the experimental Debug Adapter Protocol implementation. `sagan-dap`
   can launch programs and exercise breakpoints, mapped stacks, source-mapped
   stop-on-entry, and source-level

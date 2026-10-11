@@ -55,7 +55,15 @@ auto main() -> int
               initialized.get("capabilities")->get("renameProvider")->get("prepareProvider")->boolean() == true &&
               initialized.get("capabilities")->get("positionEncoding")->string() == "utf-16" &&
               initialized.get("experimental")->get("compiler")->get("capabilities")
-                  ->get("languageServer")->boolean() == true,
+                  ->get("languageServer")->boolean() == true &&
+              initialized.get("experimental")->get("compiler")->get("packageCompletionSchema")
+                  ->string() == "sagan-package-completion-v1" &&
+              initialized.get("experimental")->get("compiler")->get("capabilities")
+                  ->get("packageCompletion")->boolean() == true &&
+              initialized.get("experimental")->get("compiler")->get("capabilities")
+                  ->get("packageNavigation")->boolean() == false &&
+              initialized.get("experimental")->get("compiler")->get("capabilities")
+                  ->get("packageAutoImport")->boolean() == false,
           "initialize did not advertise implemented hover support");
   const auto catalog_uri = sagan::source::identity_from_path(
       sagan::source::document_id{}, "tests/fixtures/package_index/index.tsv").uri.value;
@@ -648,20 +656,14 @@ auto main() -> int
                                               {"text", std::string(collision.value->text())}}}});
   const auto collision_completion = request(service, "textDocument/completion",
                                             at(collision_uri, 6, 2));
-  require(collision_completion.elements(), "colliding export completion returned no candidates");
-  std::vector<std::string> collision_details;
-  for (const auto &item : *collision_completion.elements())
-    if (item.get("label") && item.get("label")->string() == "answer")
-    {
-      const auto *edits = item.get("additionalTextEdits");
-      require(edits && edits->elements() && edits->elements()->size() == 1 &&
-                  item.get("detail") && item.get("detail")->string(),
-              "colliding export completion omitted its module-specific edit or detail");
-      collision_details.push_back(std::string(*item.get("detail")->string()));
-    }
-  require(collision_details == std::vector<std::string>{"(): Int (from alpha)",
-                                                       "(): Int (from beta)"},
-          "standard LSP completion did not distinguish colliding module exports");
+  require(collision_completion.elements(), "colliding export completion returned no list");
+  require(std::none_of(collision_completion.elements()->begin(),
+                       collision_completion.elements()->end(), [](const auto &item)
+          {
+            return (item.get("label") && item.get("label")->string() == "answer") ||
+                   item.get("additionalTextEdits");
+          }),
+          "LSP exposed edit-bearing auto-import candidates while packageAutoImport is false");
   notify(service, "textDocument/didClose",
          J::object{{"textDocument", J::object{{"uri", collision_uri}}}});
   const std::string composition_uri = "untitled:composition-lsp";

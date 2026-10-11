@@ -288,7 +288,11 @@ overlay-aware compiler-owned queries for incomplete module paths, selective
 exported names, and module/export definition and hover targets. The
 selective-export query is bounded to 256 results and
 reports truncation. These tested contexts do not yet constitute complete
-package completion, navigation, or auto-import.
+the complete package UX. Installed-package completion is separately versioned
+as `sagan-package-completion-v1` and advertised by `packageCompletion` after
+its library and LSP fixtures pass. Package navigation and package auto-import
+remain separate false capabilities; when auto-import is false the server does
+not return edit-bearing package completion candidates.
 Editors must not carry a parallel list.
 
 ## Operations and debugger metadata

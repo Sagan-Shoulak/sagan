@@ -95,11 +95,12 @@ package completion.
 Dependency resolution is a separate compiler-owned operation: manifest aliases,
 the installed local index, and exact `sagan.lock` pins select the source linked
 into a project. `sagan/packages/catalog` reports source-derived exports and
-signatures when installed source can be checked. Standard completion already
-suggests unfinished module paths and explicitly exported names in selective
-imports; definition and hover work on those import names and on resolved
-package-owned uses. These are tested subsets, not a claim of full package
-completion, navigation, or safe auto-import. See the
+signatures when installed source can be checked. The versioned
+`sagan-package-completion-v1` contract covers unfinished module paths,
+selective imports, qualified names, types, and members. Definition and hover
+already work for several package-owned contexts, but `packageNavigation`
+remains false until its complete matrix passes. `packageAutoImport` also
+remains false, so the server omits edit-bearing package candidates. See the
 [package catalog contract](package-catalog-contract.md).
 
 ## Reliability gate

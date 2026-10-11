@@ -168,6 +168,7 @@ auto main() -> int
                       capabilities.contains("\"debugMetadataSchema\":\"sagan-debug-metadata-v1\"") &&
                       capabilities.contains("\"breakpointMappingSchema\":\"sagan-dap-breakpoints-v1\"") &&
                       capabilities.contains("\"packageCatalogSchema\":\"sagan-package-catalog-v1\"") &&
+                      capabilities.contains("\"packageCompletionSchema\":\"sagan-package-completion-v1\"") &&
                       capabilities.contains("\"debugAdapterExecutable\":\"sagan-dap") &&
                       capabilities.contains("\"nativeBuild\":true") &&
                       capabilities.contains("\"nativeRun\":true") &&
@@ -181,7 +182,9 @@ auto main() -> int
                       capabilities.contains("\"packageIndexReader\":true") &&
                       capabilities.contains("\"packageQuery\":true") &&
                       capabilities.contains("\"packageCatalog\":true") &&
-                      capabilities.contains("\"packageCompletion\":false") &&
+                      capabilities.contains("\"packageCompletion\":true") &&
+                      capabilities.contains("\"packageNavigation\":false") &&
+                      capabilities.contains("\"packageAutoImport\":false") &&
                       capabilities.contains("\"operationTransport\":true") &&
                       capabilities.contains("\"operationCancellation\":true"),
                   "versioned capability discovery");
