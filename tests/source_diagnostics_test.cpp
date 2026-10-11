@@ -240,6 +240,8 @@ auto main() -> int
   const auto meter = unit_registry.resolve("meter", unit_range);
   const auto kilometer = unit_registry.resolve("kilometer", unit_range);
   const auto speed = unit_registry.resolve("meter / second", unit_range);
+  const auto person = unit_registry.resolve("person", unit_range);
+  const auto population_rate = unit_registry.resolve("person / second", unit_range);
   const auto inverse_area = unit_registry.resolve("meter ^ -2", unit_range);
   const auto acceleration = unit_registry.resolve("meter / second^2", unit_range);
   const auto grouped = unit_registry.resolve("(meter * meter) / second", unit_range);
@@ -251,12 +253,18 @@ auto main() -> int
   const auto watt = unit_registry.resolve("watt", unit_range);
   const auto delta_celsius = unit_registry.resolve("Delta<Celsius>", unit_range);
   passed &= check(kilometer.scale.decimal_exponent == 3 && speed.dimension.size() == 2 &&
+                      person.scale == semantic::units::rational{1, 1} &&
+                      person.dimension.at("Population") == 1 &&
+                      population_rate.dimension.at("Population") == 1 &&
+                      population_rate.dimension.at("Time") == -1 &&
                       inverse_area.dimension.at("Length") == -2 && inverse_area.name == "meter^-2" &&
                       acceleration.dimension.at("Time") == -2 &&
                       acceleration.name == "meter / second^2" && grouped.dimension.at("Length") == 2 &&
                       delta_celsius.kind == semantic::units::category::affine_difference &&
                       unit_registry.find("meter") && !unit_registry.find("missing") &&
+                      unit_registry.find("person") && !unit_registry.find("kiloperson") &&
                       unit_registry.dimension_dimensions("Length") &&
+                      unit_registry.dimension_dimensions("Population") &&
                       !unit_registry.dimension_dimensions("Missing") &&
                       unit_registry.quantity_dimensions("Speed") &&
                       !unit_registry.quantity_dimensions("Missing"),
@@ -270,9 +278,11 @@ auto main() -> int
   const auto measured = semantic::units::parse_measured_type("Float64<meter / second>", unit_registry, unit_range);
   passed &= check(measured && measured->numeric == "Float64" &&
                       semantic::units::format_type("Float64", meter) == "Float64<meter>" &&
+                      semantic::units::format_type("Float64", person) == "Float64<person>" &&
                       !semantic::units::parse_measured_type("String<meter>", unit_registry, unit_range) &&
                       !semantic::units::parse_measured_type("Float64", unit_registry, unit_range) &&
                       semantic::units::compatible(meter, kilometer) &&
+                      !semantic::units::compatible(person, meter) &&
                       !semantic::units::compatible(meter, speed),
                   "unit type parsing formatting and compatibility");
   const auto normalized = semantic::units::rational{20, -40, 2, 1}.normalized();

@@ -2,6 +2,7 @@ const SPEED_OF_LIGHT = 299_792_458
 const STANDARD_GRAVITY: Float64<meter / second^2> = 9.80665 (meter / second^2)
 const GRAVITATIONAL_CONSTANT: Float64<meter^3 / kilogram / second^2> =
   6.67430e-11 (meter^3 / kilogram / second^2)
+const CREW: Float64<person> = 4 person
 
 class Orbit {
   const STANDARD_RADIUS: Int = 3
@@ -31,6 +32,7 @@ fun main(): Int {
   print("Speed: ${SPEED}")
   print("Radius: ${ORBIT.STANDARD_RADIUS}")
   print("Standard gravity: ${STANDARD_GRAVITY}")
+  print("Crew: ${CREW}")
   print(destination)
   print("Alias value: ${PROBE.value}")
   print("Generic retries: ${identity(MAX_RETRIES)}")
