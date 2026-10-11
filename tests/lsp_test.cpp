@@ -66,6 +66,8 @@ auto main() -> int
                   ->string() == "sagan-dap-exceptions-v1" &&
               initialized.get("experimental")->get("compiler")->get("debugClassFieldsSchema")
                   ->string() == "sagan-dap-class-fields-v1" &&
+              initialized.get("experimental")->get("compiler")->get("debugMemberEvaluateSchema")
+                  ->string() == "sagan-dap-member-evaluate-v1" &&
               initialized.get("experimental")->get("compiler")->get("capabilities")
                   ->get("packageCompletion")->boolean() == true &&
               initialized.get("experimental")->get("compiler")->get("capabilities")
@@ -75,7 +77,9 @@ auto main() -> int
               initialized.get("experimental")->get("compiler")->get("capabilities")
                   ->get("debugExceptions")->boolean() == true &&
               initialized.get("experimental")->get("compiler")->get("capabilities")
-                  ->get("debugClassFields")->boolean() == true,
+                  ->get("debugClassFields")->boolean() == true &&
+              initialized.get("experimental")->get("compiler")->get("capabilities")
+                  ->get("debugMemberEvaluate")->boolean() == true,
           "initialize did not advertise implemented hover support");
   const auto catalog_uri = sagan::source::identity_from_path(
       sagan::source::document_id{}, "tests/fixtures/package_index/index.tsv").uri.value;

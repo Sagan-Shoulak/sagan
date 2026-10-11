@@ -1573,8 +1573,12 @@ namespace sagan::dap
           }
           const language_service::debug_variable *known = nullptr;
           std::optional<std::string> native_expression;
+          std::string result_type;
           const auto frame_id = integer_field(arguments, "frameId");
-          if (build && build->debug)
+          const auto dot = expression.find('.');
+          const auto direct_member = dot != std::string::npos && dot > 0 &&
+              dot + 1 < expression.size() && expression.find('.', dot + 1) == std::string::npos;
+          if (build && build->debug && !direct_member)
             for (const auto &candidate : build->debug->variables)
               if (candidate.name == expression)
               {
@@ -1592,8 +1596,36 @@ namespace sagan::dap
                 const auto previous_width = known ?
                     known->lifetime.bytes.end - known->lifetime.bytes.begin : 0;
                 if (!known || width < previous_width)
-                { known = &candidate; native_expression = current; }
+                { known = &candidate; native_expression = current; result_type = candidate.type; }
               }
+          if (build && build->debug && direct_member)
+          {
+            const auto owner_name = expression.substr(0, dot);
+            const auto field_name = expression.substr(dot + 1);
+            for (const auto &candidate : build->debug->variables)
+            {
+              if (candidate.name != owner_name || candidate.parameter) continue;
+              const auto object = class_object_expression(candidate, frame_id);
+              if (!object) continue;
+              const auto field = std::find_if(build->debug->class_fields.begin(),
+                  build->debug->class_fields.end(), [&](const auto &entry)
+                  {
+                    return entry.owner_type == candidate.type && entry.name == field_name &&
+                        entry.representation ==
+                            language_service::debug_value_representation::direct_value;
+                  });
+              if (field == build->debug->class_fields.end()) continue;
+              const auto width = candidate.lifetime.bytes.end - candidate.lifetime.bytes.begin;
+              const auto previous_width = known ?
+                  known->lifetime.bytes.end - known->lifetime.bytes.begin : 0;
+              if (!known || width < previous_width)
+              {
+                known = &candidate;
+                native_expression = *object + "->" + field->generated_name;
+                result_type = field->type;
+              }
+            }
+          }
           if (!field(arguments, "frameId").integer())
           {
             response(seq, command, false, {},
@@ -1611,7 +1643,7 @@ namespace sagan::dap
           native.insert_or_assign("arguments", native_arguments);
           {
             std::scoped_lock lock(state_mutex_);
-            evaluated_types_.insert_or_assign(seq, known->type);
+            evaluated_types_.insert_or_assign(seq, result_type);
           }
           try { forward(native); }
           catch (...)

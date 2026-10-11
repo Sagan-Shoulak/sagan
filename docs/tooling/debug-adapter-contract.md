@@ -99,6 +99,15 @@ cleared on continue or a new stop. Inherited, generated mixin, nested object,
 collection, mutation, and optimized-local support are not claimed.
 `debugClassFields` is true for this narrow contract.
 
+The independently versioned `sagan-dap-member-evaluate-v1` slice accepts only
+an exact initialized local name, one dot, and one direct scalar or String field
+name, such as `probe.count`. It performs no method call in the debuggee and
+returns the compiler-known Sagan field type. Pre-initialization and resumed
+frames fail closed. Chained members, inherited/generated fields, indexing,
+calls, collections, mutation, and arbitrary expressions remain unsupported.
+`debugMemberEvaluate` is true for this exact-member contract while
+`debugEvaluate` remains false.
+
 The Windows prototype uses GDB 16.3's native DAP interpreter behind a
 Sagan-owned service. The service, not the editor, builds the selected source
 or package, retains its generated-code map, resolves Sagan breakpoints, maps

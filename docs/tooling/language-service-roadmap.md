@@ -231,7 +231,9 @@ optimized-local evaluation remain unsupported. Debugger capabilities stay
 false until their individual end-to-end gates pass, except the independently
 proven `debugExceptions` raised-only capability.
 The granular `debugClassFields` capability is also true; `debugVariables` and
-`debugEvaluate` remain false.
+`debugEvaluate` remain false. The later granular `debugMemberEvaluate` slice
+adds exact read-only lookup of one direct scalar/String class field without
+claiming general expression evaluation.
 
 ## Phase 8 — Language Server Protocol transport
 
