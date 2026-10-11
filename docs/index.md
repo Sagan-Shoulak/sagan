@@ -44,9 +44,8 @@ errors, geometry values, and native units of measure.
 
 The language server already powers a usable VS Code extension, including
 diagnostics, navigation, formatting, safe rename, build/run commands, Test
-Explorer, and versioned installed-package completion. Complete package
-navigation, safe package auto-import, and a supported debugger are still in
-development. The math library beyond the built-in language
+Explorer, and versioned installed-package completion, navigation, and safe
+auto-import. A supported debugger is still in development. The math library beyond the built-in language
 foundation, rendering, physics, and non-Windows installers are later work.
 Pages say clearly when they describe planned areas.
 

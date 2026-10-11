@@ -134,10 +134,10 @@ entire definition of done.
 Complete these as separately testable increments; advertise each capability
 only when its own library, protocol, and integration tests pass:
 
-1. Contextual installed-package completion is versioned and advertised after
-   its focused library and LSP gate. Complete missing-source and multi-root
-   navigation separately, then finish safe import edits and alias collisions;
-   keep their granular capability flags false until those gates pass.
+1. Contextual installed-package completion, navigation, and safe auto-import
+   are versioned and advertised after focused library, protocol, and integration
+   gates. Keep dependency-value manifest edits and lockfile updates explicit
+   until their own granular capability gates pass.
 2. Production Sagan DAP launch: reliable Sagan scopes and values,
    source-mapped failures, breakpoint/step/termination coverage, cancellation,
    child-process cleanup, and packaged debugger dependencies. Keep attach and

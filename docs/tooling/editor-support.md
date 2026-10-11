@@ -32,9 +32,9 @@ are enabled according to the server's `initialize` response.
 The extension also uses compiler-owned cancellable check/build/run operations
 for commands and tasks, and Test Explorer uses stable IDs for explicit
 `test "name" { ... }` declarations. Project-wide test runs can span modules.
-Full package auto-import and a supported debugger are not advertised yet;
-the extension must leave those features off rather than infer support from
-the presence of experimental compiler code.
+Package completion, navigation, and safe auto-import are enabled only through
+their separately versioned compiler capabilities. A supported debugger is not
+advertised yet; the extension must not infer it from experimental compiler code.
 See [getting-started editor support](../getting-started/editor-support.md) for
 installation.
 

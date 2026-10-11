@@ -170,6 +170,7 @@ auto main() -> int
                       capabilities.contains("\"packageCatalogSchema\":\"sagan-package-catalog-v1\"") &&
                       capabilities.contains("\"packageCompletionSchema\":\"sagan-package-completion-v1\"") &&
                       capabilities.contains("\"packageNavigationSchema\":\"sagan-package-navigation-v1\"") &&
+                      capabilities.contains("\"packageAutoImportSchema\":\"sagan-package-auto-import-v1\"") &&
                       capabilities.contains("\"debugAdapterExecutable\":\"sagan-dap") &&
                       capabilities.contains("\"nativeBuild\":true") &&
                       capabilities.contains("\"nativeRun\":true") &&
@@ -185,7 +186,7 @@ auto main() -> int
                       capabilities.contains("\"packageCatalog\":true") &&
                       capabilities.contains("\"packageCompletion\":true") &&
                       capabilities.contains("\"packageNavigation\":true") &&
-                      capabilities.contains("\"packageAutoImport\":false") &&
+                      capabilities.contains("\"packageAutoImport\":true") &&
                       capabilities.contains("\"operationTransport\":true") &&
                       capabilities.contains("\"operationCancellation\":true"),
                   "versioned capability discovery");

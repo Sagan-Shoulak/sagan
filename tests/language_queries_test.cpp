@@ -146,7 +146,8 @@ auto main() -> int
   const source::document_snapshot changed(document.identity(), 5, text);
   const language_service::document_queries stale(changed, indexed.value->index);
   require(stale.symbol_at(emoji_use).state == diagnostics::result_state::stale &&
-              stale.document_symbols().state == diagnostics::result_state::stale,
+              stale.document_symbols().state == diagnostics::result_state::stale &&
+              stale.completions(emoji_use).state == diagnostics::result_state::stale,
           "old index was used for a newer document");
   const language_service::document_queries stale_signature(changed, indexed.value->index, nullptr,
                                                             &indexed.value->model, &*indexed.value->types);

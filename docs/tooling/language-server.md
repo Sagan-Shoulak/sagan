@@ -100,7 +100,8 @@ signatures when installed source can be checked. The versioned
 selective imports, qualified names, types, and members. Definition and hover
 for package-owned contexts are advertised through the independent
 `sagan-package-navigation-v1` contract after its complete matrix passed.
-`packageAutoImport` remains false, so the server omits edit-bearing package candidates. See the
+Safe edit-bearing candidates are advertised through the independent
+`sagan-package-auto-import-v1` contract. See the
 [package catalog contract](package-catalog-contract.md).
 
 ## Reliability gate

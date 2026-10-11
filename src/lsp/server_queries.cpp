@@ -834,10 +834,13 @@ namespace sagan::lsp
     if (method == "textDocument/completion")
     {
       J::array entries;
-      // Package auto-import remains a separately negotiated capability. Keep
-      // ordinary package completions available without returning edit-bearing
-      // candidates until that contract is advertised.
-      if (const auto result = queries.completions(selected(), false); result.value)
+      if (cancellation.is_cancelled()) throw request_cancelled{};
+      const auto result = queries.completions(selected(), true);
+      if (cancellation.is_cancelled()) throw request_cancelled{};
+      const auto current = documents_->read(uri);
+      if (!current || current.value->version() != document.version() ||
+          current.value->text() != document.text()) throw request_cancelled{};
+      if (result.value)
         for (const auto &candidate : *result.value)
         {
           J::object item{{"label", candidate.label}, {"kind", completion_kind(candidate.kind)},

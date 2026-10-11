@@ -292,8 +292,8 @@ the complete package UX. Installed-package completion is separately versioned
 as `sagan-package-completion-v1` and advertised by `packageCompletion` after
 its library and LSP fixtures pass. Package navigation and package auto-import
 remain separately negotiated: navigation is versioned as
-`sagan-package-navigation-v1`, while auto-import remains false and the server
-does not return edit-bearing package completion candidates.
+`sagan-package-navigation-v1`, and safe edit-bearing completion is versioned as
+`sagan-package-auto-import-v1`.
 Editors must not carry a parallel list.
 
 ## Operations and debugger metadata
