@@ -234,6 +234,8 @@ The granular `debugClassFields` capability is also true; `debugVariables` and
 `debugEvaluate` remain false. The later granular `debugMemberEvaluate` slice
 adds exact read-only lookup of one direct scalar/String class field without
 claiming general expression evaluation.
+The granular `debugNestedClass` slice adds one class-valued child expansion;
+recursive object graphs and collections remain future gates.
 
 ## Phase 8 — Language Server Protocol transport
 

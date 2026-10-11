@@ -39,7 +39,9 @@ auto main() -> int
           "Nonexecutable line unexpectedly accepted a breakpoint");
 
   const std::string class_text =
-      "class Nested {}\n"
+      "class Nested {\n"
+      "  let value: Int = 1\n"
+      "}\n"
       "class Probe {\n"
       "  let count: Int\n"
       "  let ready: Bool\n"
@@ -57,7 +59,7 @@ auto main() -> int
   const auto class_cpp = codegen::generate_cpp_mapped(class_tree, class_types, "fields.sagan");
   const auto class_metadata = sagan::language_service::derive_debug_metadata(
       class_document, class_model, class_types, class_cpp);
-  require(class_metadata.class_fields.size() == 4,
+  require(class_metadata.class_fields.size() == 5,
           "Direct source class fields did not produce debugger metadata");
   const auto scalar_fields = std::count_if(class_metadata.class_fields.begin(),
       class_metadata.class_fields.end(), [](const auto &field)
@@ -74,6 +76,14 @@ auto main() -> int
                             sagan::language_service::debug_value_representation::unavailable;
                   }),
           "Class field metadata did not distinguish direct scalar and nested values");
+  require(std::any_of(class_metadata.class_fields.begin(), class_metadata.class_fields.end(),
+              [](const auto &field)
+              {
+                return field.owner_type == "Nested" && field.name == "value" &&
+                    field.representation ==
+                        sagan::language_service::debug_value_representation::direct_value;
+              }),
+          "Nested class metadata did not retain its own direct scalar field");
 
   const std::string exception_text =
       "hope scream \"caught\"\n"
