@@ -19,6 +19,7 @@
 #include <cstdint>
 #include <cstdlib>
 #include <filesystem>
+#include <fstream>
 #include <istream>
 #include <map>
 #include <memory>
@@ -39,6 +40,17 @@
 
 namespace sagan::dap
 {
+  auto read_runtime_diagnostics(const std::filesystem::path &path,
+                                const std::size_t limit) -> std::string
+  {
+    std::ifstream diagnostics(path, std::ios::binary);
+    if (!diagnostics || limit == 0) return {};
+    std::string captured(limit, '\0');
+    diagnostics.read(captured.data(), static_cast<std::streamsize>(captured.size()));
+    captured.resize(static_cast<std::size_t>(diagnostics.gcount()));
+    return captured;
+  }
+
   namespace
   {
     using J = lsp::json::value;
@@ -277,6 +289,7 @@ namespace sagan::dap
       bool launch_pending_{};
       bool stop_on_entry_pending_{};
       std::optional<std::pair<std::size_t, std::size_t>> entry_breakpoint_;
+      std::filesystem::path runtime_diagnostics_path_;
       std::string runtime_stderr_;
       bool runtime_failure_published_{};
 
@@ -527,6 +540,17 @@ namespace sagan::dap
                                     ? path_utf8(plan->working_directory)
                                     : string_field(arguments, "cwd")},
                                 {"stopOnEntry", false}};
+#ifndef _WIN32
+          runtime_diagnostics_path_ = artifact_root_ / "runtime-diagnostics.txt";
+          std::error_code remove_error;
+          std::filesystem::remove(runtime_diagnostics_path_, remove_error);
+          J::object environment;
+          for (const auto &[name, value] : plan->environment)
+            environment.insert_or_assign(name, value);
+          environment.insert_or_assign("SAGAN_RUNTIME_DIAGNOSTICS_FILE",
+                                       path_utf8(runtime_diagnostics_path_));
+          native_args.emplace("env", std::move(environment));
+#endif
           if (const auto *args = field(arguments, "args").elements())
             native_args.emplace("args", *args);
           forward(J::object{{"seq", seq}, {"type", "request"},
@@ -1074,6 +1098,9 @@ namespace sagan::dap
     {
       if (runtime_stderr_.find("SAGAN_RUNTIME_ERROR\t") == std::string::npos && gdb_)
         runtime_stderr_ += gdb_->captured_stderr();
+      if (runtime_stderr_.find("SAGAN_RUNTIME_ERROR\t") == std::string::npos &&
+          !runtime_diagnostics_path_.empty())
+        runtime_stderr_ += read_runtime_diagnostics(runtime_diagnostics_path_);
       if (runtime_failure_published_ ||
           runtime_stderr_.find("SAGAN_RUNTIME_ERROR\t") == std::string::npos) return;
       runtime_failure_published_ = true;
