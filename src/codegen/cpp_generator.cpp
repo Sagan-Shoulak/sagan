@@ -63,14 +63,16 @@ namespace codegen
         std::size_t begin;
         parser::span source;
         bool breakpoint;
+        bool exception_raise;
         std::optional<std::filesystem::path> source_path;
         std::string function;
         std::string previous_function;
 
         map_scope(cpp_generator &owner, const parser::span range, const bool can_break,
-                  std::string function_name = {})
+                  std::string function_name = {}, const bool raises_exception = false)
             : generator(owner), begin(static_cast<std::size_t>(owner.output.tellp())),
-              source(range), breakpoint(can_break), source_path(owner.active_source),
+              source(range), breakpoint(can_break), exception_raise(raises_exception),
+              source_path(owner.active_source),
               function(function_name.empty() ? owner.active_function : std::move(function_name)),
               previous_function(owner.active_function)
         {
@@ -81,7 +83,8 @@ namespace codegen
         {
           const auto end = static_cast<std::size_t>(generator.output.tellp());
           if (generator.map_enabled && end > begin && source.begin >= 0 && source.end >= source.begin)
-            generator.mappings.push_back({begin, end, source, source_path, function, breakpoint});
+            generator.mappings.push_back(
+                {begin, end, source, source_path, function, breakpoint, exception_raise});
           generator.active_function = previous_function;
         }
       };
@@ -1115,7 +1118,8 @@ namespace codegen
 
       auto statement(const parser::statement &value) -> void
       {
-        map_scope mapped(*this, value.range, true);
+        map_scope mapped(*this, value.range, true, {},
+                         dynamic_cast<const parser::scream_statement *>(&value) != nullptr);
         if (map_enabled)
           output << indentation() << "sagan_source_scope sagan_site_" << temporary_index++
                  << '(' << escaped_string(active_source_utf8())

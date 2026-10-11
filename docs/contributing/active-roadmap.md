@@ -139,7 +139,8 @@ only when its own library, protocol, and integration tests pass:
    gates. Keep dependency-value manifest edits and lockfile updates explicit
    until their own granular capability gates pass.
 2. Production Sagan DAP launch: reliable Sagan scopes and values,
-   source-mapped failures, breakpoint/step/termination coverage, cancellation,
+   source-mapped failures, exception behavior beyond the independently proven
+   raised-only filter, breakpoint/step/termination coverage, cancellation,
    child-process cleanup, and packaged debugger dependencies. Keep attach and
    optimized-local evaluation false unless separately proven.
 3. Complete compiler-owned `sagan.toml` document tooling beyond its initial

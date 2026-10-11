@@ -21,6 +21,7 @@ namespace codegen
     std::optional<std::filesystem::path> source_path;
     std::string generated_function;
     bool breakpoint{};
+    bool exception_raise{};
   };
 
   struct generated_cpp

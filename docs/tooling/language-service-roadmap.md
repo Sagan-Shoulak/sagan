@@ -224,10 +224,11 @@ request. A later increment added selected document and linked-project test
 execution, including package roots and imported-module overlays. A later
 increment added an experimental framed `sagan-dap` process backed by GDB's
 native DAP. It has tested launch, Sagan-mapped breakpoint/stack probes, and
-source-level stepping, but reliable Sagan values, exception mapping, complete
-cleanup coverage, and release packaging are still missing. Attach and
+source-level stepping plus a versioned raised-exception stop, but reliable Sagan
+values, caught-versus-uncaught filtering, complete cleanup coverage, and release packaging are still missing. Attach and
 optimized-local evaluation remain unsupported. Debugger capabilities stay
-false until their individual end-to-end gates pass.
+false until their individual end-to-end gates pass, except the independently
+proven `debugExceptions` raised-only capability.
 
 ## Phase 8 — Language Server Protocol transport
 

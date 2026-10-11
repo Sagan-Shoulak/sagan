@@ -43,7 +43,7 @@ below are deliberate limits, not work for the extension to invent locally.
 | Call hierarchy | Resolved callable/call-site index | **LSP available for resolved calls** |
 | Check/build/run tasks | Structured cancellable operations | **Versioned document/project operations and `sagan/operation` transport are available; the extension provides commands and generated document/project tasks with cancellation and output** |
 | Test Explorer | Authoritative Sagan test discovery and execution model | **The extension provides document/project discovery and selected or all execution through granular compiler capabilities; Run results include duration, output, and pass/fail/error/skipped state** |
-| Debugger | Source maps/runtime metadata, then a separate DAP implementation | **Experimental `sagan-dap` launches on Windows and an isolated Linux test host, maps breakpoints/stacks, displays proven scalar and UTF-8 String locals/parameters, and has source-level stop-on-entry and step-over/in/out probes. The extracted Windows portable ZIP now passes its checksum, isolated CLI, bundled-GDB DAP, String-value, and windowed-orbit checks after packaging libstdc++'s pretty-printers. Collections/nested values, exception stops, installer validation, dependency/license review, and capability advertisement remain blocked.** |
+| Debugger | Source maps/runtime metadata, then a separate DAP implementation | **Experimental `sagan-dap` launches on Windows and an isolated Linux test host, maps breakpoints/stacks, displays proven scalar and UTF-8 String locals/parameters, and has source-level stop-on-entry and step-over/in/out probes. A separately versioned raised-exception filter stops at exact Sagan `scream` sites. The extracted Windows portable ZIP now passes its checksum, isolated CLI, bundled-GDB DAP, String-value, and windowed-orbit checks after packaging libstdc++'s pretty-printers. Collections/nested values, caught-versus-uncaught filtering, installer validation, dependency/license review, and aggregate adapter/launch advertisement remain blocked.** |
 | Lexical TextMate coloring | Existing extension grammar | **Already available, outside this task** |
 
 The experimental adapter also emits Sagan-mapped runtime failure output using
@@ -81,8 +81,8 @@ The remaining compiler-side milestones, in dependency order, are:
    value completion, safe manifest edits, and lockfile updates remain open.
 4. Finish the experimental Windows DAP executable using GDB native DAP,
    source maps, and debug metadata. It already has a live launch/breakpoint/
-   stack and step-over/in/out probes; verify all source contexts, Sagan scopes
-   and values, exceptions,
+   stack, step-over/in/out, and raised-exception probes; verify all source contexts,
+   Sagan scopes and values, broader exception filtering,
    cancellation, shutdown, and runtime packaging before
    advertising debugger support.
 
