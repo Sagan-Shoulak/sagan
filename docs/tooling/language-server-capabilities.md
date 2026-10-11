@@ -74,7 +74,8 @@ The compiler discovery JSON includes
 proof-gated edit actions are available and why others are disabled. This is
 embedded in LSP `initialize` under `experimental.compiler`.
 The same JSON reports `sagan-operations-v2`, `sagan-cpp-source-map-v1`, and
-`sagan-debug-metadata-v1`. The additive `debugAdapterExecutable` discovery
+`sagan-debug-metadata-v1`, plus the raised-exception sub-contract
+`sagan-dap-exceptions-v1`. The additive `debugAdapterExecutable` discovery
 field names `sagan-dap.exe` on Windows or `sagan-dap` elsewhere, located beside
 `sagan` and `sagan-lsp`; its presence does not override a false `debugAdapter`
 capability. Native check/build/run and cancellable LSP operation
@@ -94,8 +95,9 @@ inside selective imports also have source definition and hover targets,
 including incomplete importer documents and installed-source overlays.
 Package completion, package navigation, and safe package auto-import are
 independently versioned true capabilities. The
-breakpoint mapping library is available, but every live DAP/debugger capability
-remains false until the adapter and release payload pass end-to-end tests.
+breakpoint mapping library is available. `debugExceptions` is true only for the
+opt-in raised Sagan exception filter; aggregate adapter/launch, breakpoint,
+stepping, variable, evaluation, attach, and optimized-local flags remain false.
 
 For an open document named `sagan.toml`, the server now validates the unsaved
 buffer with the same manifest parser used for disk builds and publishes

@@ -1,0 +1,7 @@
+module support
+
+fun fail(): Void {
+  scream "imported failure"
+}
+
+export fail

@@ -48,19 +48,24 @@ temporary native-build artifacts.
 This is still a development probe, not a completed debugger: native variable
 representations are not yet reliably usable as Sagan values. Source-level stepping now
 has Windows top-level-to-function-and-back and imported-module probes, but
-still needs method, lambda, and failure-path coverage. Runtime exception
-translation needs focused tests; attach and
+still needs method, lambda, and failure-path coverage. Attach and
 arbitrary expression evaluation is absent. A guarded scalar lookup probe is
 available but does not constitute general debugging support. Installer execution and the
-debugger dependency/license review remain release gates. All live debugger capability
-flags remain false.
+debugger dependency/license review remain release gates. Only the independently
+versioned raised-exception capability is advertised; aggregate launch, stepping,
+breakpoint, variable, and evaluation flags remain false.
 
 The adapter recognizes generated programs' structured runtime error and
 traceback records, then emits one DAP `output` event with the Sagan diagnostic
 code, message, traceback notes, and mapped source/line/column. The CLI and
 DAP share the same runtime-diagnostic parser. Executable probes cover integer
-overflow and assertion failure. This reports a failure after it occurs; it
-does not pause on exceptions, so `debugExceptions` remains false.
+overflow and assertion failure. Separately, `sagan-dap-exceptions-v1` identifies
+compiler-owned `scream` sites in entry and imported modules. The adapter exposes
+one opt-in `raised` filter, pauses before caught or uncaught `scream` statements,
+and maps the stop back to the exact Sagan source location. Unsupported or
+conditional filters are rejected, and clearing the filter removes only those
+internal exception breakpoints. `debugExceptions` is true for this raised-only
+contract; caught-versus-uncaught filtering is not claimed.
 
 A direct C++ `std::shared_ptr` dereference through GDB's DAP `evaluate` was
 rejected because it invokes an overloaded operator in the debuggee. The
@@ -95,7 +100,8 @@ insufficient: it would expose generated C++ locations and names.
 `attach` and arbitrary paused-expression evaluation remain unsupported until
 they have an authoritative runtime implementation and tests.
 An isolated Linux build on HP1 with GCC 15.2 and temporary, user-space GDB
-17.1 passed the executable DAP launch protocol, installed-package LSP
+17.1 passed the executable DAP launch protocol, including raised-exception
+stops, installed-package LSP
 protocol, package-resolution library, DAP-framing library, and GDB-process
 tests. No GDB package was installed system-wide. This does not establish a
 distributable Linux debugger package or full value and exception behavior.
@@ -135,7 +141,7 @@ and supporting DLLs and passes this probe with an isolated `PATH`.
 
 Before advertising `debugAdapter` or `debugLaunch`, the repository still needs
 source-level stepping across all valid constructs, usable Sagan scopes and values,
-exception-stop behavior, full cancellation/cleanup tests, installer validation,
+full cancellation/cleanup tests, installer validation,
 debugger dependency/license review, and broader end-to-end protocol tests.
 Breakpoint, stepping, variable,
 evaluation, exception, and attach capabilities must be advertised separately

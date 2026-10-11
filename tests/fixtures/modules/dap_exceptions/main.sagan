@@ -1,0 +1,5 @@
+module main
+
+import fail from support
+
+fail()

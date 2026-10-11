@@ -182,6 +182,100 @@ def source_stop_on_entry(binary, gdb):
                 process.wait(timeout=10)
 
 
+def raised_exception_breakpoints(binary, gdb):
+    with tempfile.TemporaryDirectory(prefix="sagan exceptions ") as folder:
+        source = Path(folder) / "exceptions 🚀.sagan"
+        source.write_text(
+            'hope scream "caught"\n'
+            'unless "caught" print("handled")\n'
+            'scream "uncaught"\n',
+            encoding="utf-8")
+
+        def session(clear_filter):
+            environment = os.environ.copy()
+            environment["SAGAN_GDB"] = str(gdb)
+            process = subprocess.Popen([str(binary)], stdin=subprocess.PIPE,
+                                       stdout=subprocess.PIPE, stderr=subprocess.PIPE,
+                                       env=environment)
+            messages = queue.Queue()
+            threading.Thread(target=reader, args=(process.stdout, messages), daemon=True).start()
+            pending = []
+
+            def send(seq, command, arguments=None):
+                process.stdin.write(frame({"seq": seq, "type": "request", "command": command,
+                                           "arguments": arguments or {}}))
+                process.stdin.flush()
+
+            def expect(predicate):
+                for index, item in enumerate(pending):
+                    if predicate(item):
+                        return pending.pop(index)
+                while True:
+                    item = messages.get(timeout=60)
+                    if isinstance(item, BaseException):
+                        raise item
+                    if predicate(item):
+                        return item
+                    pending.append(item)
+
+            try:
+                send(1, "initialize", {"adapterID": "sagan"})
+                initialized = expect(lambda item: item.get("request_seq") == 1)
+                assert initialized["success"], initialized
+                assert initialized["body"]["exceptionBreakpointFilters"] == [{
+                    "filter": "raised",
+                    "label": "Raised Sagan exceptions",
+                    "description": "Pause before every Sagan scream statement",
+                    "default": False,
+                    "supportsCondition": False,
+                }], initialized
+                expect(lambda item: item.get("event") == "initialized")
+                send(2, "setExceptionBreakpoints", {"filters": ["native"]})
+                rejected = expect(lambda item: item.get("request_seq") == 2)
+                assert not rejected["success"], rejected
+                send(3, "setExceptionBreakpoints", {"filters": ["raised"]})
+                enabled = expect(lambda item: item.get("request_seq") == 3)
+                assert enabled["success"], enabled
+                send(5, "launch", {"program": str(source)})
+                if clear_filter:
+                    send(4, "setExceptionBreakpoints", {"filters": []})
+                send(6, "configurationDone")
+                assert expect(lambda item: item.get("request_seq") == 5)["success"]
+                if clear_filter:
+                    cleared = expect(lambda item: item.get("request_seq") == 4)
+                    assert cleared["success"], cleared
+                assert expect(lambda item: item.get("request_seq") == 6)["success"]
+                if clear_filter:
+                    expect(lambda item: item.get("event") == "terminated")
+                    assert not any(item.get("event") == "stopped" for item in pending), pending
+                else:
+                    for expected_line in (1, 3):
+                        stopped = expect(lambda item: item.get("event") == "stopped")
+                        assert stopped["body"]["reason"] == "exception", stopped
+                        thread_id = stopped["body"]["threadId"]
+                        send(10 + expected_line, "stackTrace", {"threadId": thread_id})
+                        stack = expect(lambda item, seq=10 + expected_line:
+                                       item.get("request_seq") == seq)
+                        assert stack["success"] and stack["body"]["stackFrames"], stack
+                        top = stack["body"]["stackFrames"][0]
+                        assert same_path(top["source"]["path"], source), top
+                        assert top["line"] == expected_line, top
+                        send(20 + expected_line, "continue", {"threadId": thread_id})
+                        assert expect(lambda item, seq=20 + expected_line:
+                                      item.get("request_seq") == seq)["success"]
+                    expect(lambda item: item.get("event") == "terminated")
+                send(30, "disconnect", {"terminateDebuggee": True})
+                assert expect(lambda item: item.get("request_seq") == 30)["success"]
+                process.wait(timeout=10)
+            finally:
+                if process.poll() is None:
+                    process.kill()
+                    process.wait(timeout=10)
+
+        session(clear_filter=False)
+        session(clear_filter=True)
+
+
 def package_launch(binary, gdb):
     environment = os.environ.copy()
     environment["SAGAN_GDB"] = str(gdb)
@@ -565,6 +659,7 @@ def run():
                            "SAG-RUN-0101")
     mapped_runtime_failure(binary, gdb, "tests/fixtures/runtime/assert_fail.sagan",
                            "SAG-RUN-0200")
+    raised_exception_breakpoints(binary, gdb)
     source_stop_on_entry(binary, gdb)
     package_launch(binary, gdb)
     imported_module_breakpoint(binary, gdb)

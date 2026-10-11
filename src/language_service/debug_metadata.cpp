@@ -53,9 +53,15 @@ namespace sagan::language_service
     for (const auto &entry : generated.mappings)
     {
       if (entry.breakpoint)
+      {
         result.breakpoints.push_back({range_for(id_for(entry.source_path), entry.source),
                                       entry.source_path, entry.generated_begin,
                                       entry.generated_end, entry.generated_function});
+        if (entry.exception_raise)
+          result.exceptions.push_back({range_for(id_for(entry.source_path), entry.source),
+                                       entry.source_path, entry.generated_begin,
+                                       entry.generated_end, entry.generated_function});
+      }
       else if (!entry.generated_function.empty())
       {
         debug_function function{{}, entry.generated_function,
@@ -142,6 +148,14 @@ namespace sagan::language_service
     }
     std::sort(result.breakpoints.begin(), result.breakpoints.end(), [](const auto &left, const auto &right)
     {
+      if (left.source.bytes.begin != right.source.bytes.begin)
+        return left.source.bytes.begin < right.source.bytes.begin;
+      return left.generated_begin < right.generated_begin;
+    });
+    std::sort(result.exceptions.begin(), result.exceptions.end(), [](const auto &left, const auto &right)
+    {
+      if (left.source.document != right.source.document)
+        return left.source.document.value < right.source.document.value;
       if (left.source.bytes.begin != right.source.bytes.begin)
         return left.source.bytes.begin < right.source.bytes.begin;
       return left.generated_begin < right.generated_begin;

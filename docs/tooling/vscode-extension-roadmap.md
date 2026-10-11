@@ -129,11 +129,12 @@ for continued local extension development:
   stop-on-entry, and source-level
   stepping. Windows portable packaging now contains GDB, its Python runtime,
   and the adapter, and an extracted ZIP passed the DAP suite outside MSYS2.
-  Initialized scalar locals and parameters have a guarded value probe, while
-  collections, strings, nested values, exception stops, broader source-context
+  Initialized scalar locals, parameters, and strings have guarded value probes.
+  Raised Sagan exception stops are independently versioned, while collections,
+  nested values, caught-versus-uncaught filters, broader source-context
   and cleanup coverage, Linux distribution validation, and isolated installer
   smoke validation remain. The extension must not register a supported
-  Sagan debug type while all granular debugger capability flags remain false.
+  Sagan debug type while the aggregate adapter and launch flags remain false.
 
 ## Resume sequence
 
@@ -143,7 +144,7 @@ rather than waiting for one large final patch:
 1. Complete contextual package completion and its protocol tests.
 2. Consume the compiler's versioned package completion, navigation, and safe auto-import contracts.
 3. Complete missing-source package navigation behavior.
-4. Complete Sagan debugger values and runtime-failure/exception mapping.
+4. Complete Sagan debugger values and exception behavior beyond raised-only stops.
 5. Expand DAP source-context, cancellation, termination, and cleanup tests.
 6. Package the debugger backend and validate Windows outside MSYS2 plus Linux.
 7. Hand the tested schemas, executable-discovery contract, capability truth

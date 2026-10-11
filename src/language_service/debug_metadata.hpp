@@ -14,6 +14,7 @@
 namespace sagan::language_service
 {
   inline constexpr std::string_view debug_metadata_schema_version = "sagan-debug-metadata-v1";
+  inline constexpr std::string_view debug_exception_schema_version = "sagan-dap-exceptions-v1";
 
   struct debug_breakpoint
   {
@@ -32,6 +33,15 @@ namespace sagan::language_service
     std::optional<std::filesystem::path> source_path;
     std::size_t generated_begin{};
     std::size_t generated_end{};
+  };
+
+  struct debug_exception
+  {
+    source::source_range source;
+    std::optional<std::filesystem::path> source_path;
+    std::size_t generated_begin{};
+    std::size_t generated_end{};
+    std::string generated_function;
   };
 
   struct debug_scope
@@ -74,6 +84,7 @@ namespace sagan::language_service
     source::document_version version{};
     std::vector<debug_function> functions;
     std::vector<debug_breakpoint> breakpoints;
+    std::vector<debug_exception> exceptions;
     std::vector<debug_scope> scopes;
     std::vector<debug_variable> variables;
     std::vector<debug_expression_hook> expression_hooks;
