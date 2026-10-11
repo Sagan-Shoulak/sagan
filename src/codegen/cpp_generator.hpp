@@ -32,6 +32,7 @@ namespace codegen
 
   auto generate_cpp(const parser::program &tree, const semantic::type_model &types) -> std::string;
   auto generated_identifier(std::string_view name) -> std::string;
+  auto generated_debug_array_identifier(std::string_view name) -> std::string;
   auto generate_cpp_mapped(const parser::program &tree, const semantic::type_model &types,
                            std::optional<std::filesystem::path> default_source = {}) -> generated_cpp;
   auto generate_cpp_mapped_test(const parser::program &tree, const semantic::type_model &types,

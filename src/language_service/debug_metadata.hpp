@@ -18,6 +18,7 @@ namespace sagan::language_service
   inline constexpr std::string_view debug_class_fields_schema_version = "sagan-dap-class-fields-v1";
   inline constexpr std::string_view debug_member_evaluate_schema_version = "sagan-dap-member-evaluate-v1";
   inline constexpr std::string_view debug_nested_class_schema_version = "sagan-dap-nested-class-v1";
+  inline constexpr std::string_view debug_array_view_schema_version = "sagan-dap-array-view-v1";
 
   struct debug_breakpoint
   {
@@ -91,6 +92,13 @@ namespace sagan::language_service
     debug_value_representation representation{debug_value_representation::unavailable};
   };
 
+  struct debug_array_view
+  {
+    semantic::symbol_id symbol;
+    std::string element_type;
+    std::string generated_name;
+  };
+
   struct debug_metadata
   {
     source::document_identity document;
@@ -101,6 +109,7 @@ namespace sagan::language_service
     std::vector<debug_scope> scopes;
     std::vector<debug_variable> variables;
     std::vector<debug_class_field> class_fields;
+    std::vector<debug_array_view> array_views;
     std::vector<debug_expression_hook> expression_hooks;
   };
 

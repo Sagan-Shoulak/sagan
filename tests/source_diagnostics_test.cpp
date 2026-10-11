@@ -170,6 +170,7 @@ auto main() -> int
                       capabilities.contains("\"debugClassFieldsSchema\":\"sagan-dap-class-fields-v1\"") &&
                       capabilities.contains("\"debugMemberEvaluateSchema\":\"sagan-dap-member-evaluate-v1\"") &&
                       capabilities.contains("\"debugNestedClassSchema\":\"sagan-dap-nested-class-v1\"") &&
+                      capabilities.contains("\"debugArrayViewSchema\":\"sagan-dap-array-view-v1\"") &&
                       capabilities.contains("\"breakpointMappingSchema\":\"sagan-dap-breakpoints-v1\"") &&
                       capabilities.contains("\"packageCatalogSchema\":\"sagan-package-catalog-v1\"") &&
                       capabilities.contains("\"packageCompletionSchema\":\"sagan-package-completion-v1\"") &&
@@ -185,6 +186,7 @@ auto main() -> int
                       capabilities.contains("\"debugClassFields\":true") &&
                       capabilities.contains("\"debugMemberEvaluate\":true") &&
                       capabilities.contains("\"debugNestedClass\":true") &&
+                      capabilities.contains("\"debugArrayView\":true") &&
                       capabilities.contains("\"testDocumentDiscovery\":true") &&
                       capabilities.contains("\"testProjectDiscovery\":true") &&
                       capabilities.contains("\"testDocumentRun\":true") &&

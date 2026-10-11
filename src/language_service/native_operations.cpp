@@ -356,6 +356,8 @@ namespace sagan::language_service
       const auto configuration = driver::configured_compiler();
       auto arguments = flag_words(configuration.flags);
       arguments.push_back(profile == native_build_profile::debug ? "-O0" : "-O2");
+      if (profile == native_build_profile::debug)
+        arguments.push_back("-DSAGAN_DEBUG_ARRAY_VIEW=1");
       arguments.push_back("-g");
 #ifdef _WIN32
       arguments.push_back("-static-libgcc");

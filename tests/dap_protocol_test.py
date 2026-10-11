@@ -576,6 +576,9 @@ def local_scalar_values(binary, gdb):
             "  let rate = 2.5\n"
             "  let ready = true\n"
             "  let message = \"launch 🚀 \\\\360\"\n"
+            "  const COUNTS = [3, 5, 8]\n"
+            "  const FLAGS = [true, false]\n"
+            "  const LABELS = [\"alpha\", \"beta 🚀\"]\n"
             "  let probe = Probe(value + 40, ready, label)\n"
             "  print(local)\n"
             "  return local\n"
@@ -613,7 +616,7 @@ def local_scalar_values(binary, gdb):
             expect(lambda item: item.get("event") == "initialized")
             send(2, "launch", {"program": str(source)})
             send(3, "setBreakpoints", {"source": {"path": str(source)},
-                                       "breakpoints": [{"line": 37}, {"line": 38}, {"line": 39}]})
+                                       "breakpoints": [{"line": 40}, {"line": 41}, {"line": 42}]})
             assert expect(lambda item: item.get("request_seq") == 3)["success"]
             send(4, "configurationDone")
             assert expect(lambda item: item.get("request_seq") == 4)["success"]
@@ -621,7 +624,7 @@ def local_scalar_values(binary, gdb):
             preinit = expect(lambda item: item.get("event") == "stopped")
             send(22, "stackTrace", {"threadId": preinit["body"]["threadId"]})
             preinit_stack = expect(lambda item: item.get("request_seq") == 22)
-            assert preinit_stack["body"]["stackFrames"][0]["line"] == 37, preinit_stack
+            assert preinit_stack["body"]["stackFrames"][0]["line"] == 40, preinit_stack
             send(23, "evaluate", {"frameId": preinit_stack["body"]["stackFrames"][0]["id"],
                                    "expression": "probe.count", "context": "hover"})
             assert not expect(lambda item: item.get("request_seq") == 23)["success"]
@@ -630,7 +633,7 @@ def local_scalar_values(binary, gdb):
             stopped = expect(lambda item: item.get("event") == "stopped")
             send(5, "stackTrace", {"threadId": stopped["body"]["threadId"]})
             stack = expect(lambda item: item.get("request_seq") == 5)
-            assert stack["body"]["stackFrames"][0]["line"] == 38, stack
+            assert stack["body"]["stackFrames"][0]["line"] == 41, stack
             frame_id = stack["body"]["stackFrames"][0]["id"]
             send(6, "scopes", {"frameId": frame_id})
             scopes = expect(lambda item: item.get("request_seq") == 6)
@@ -638,6 +641,8 @@ def local_scalar_values(binary, gdb):
             assert not expect(lambda item: item.get("request_seq") == 10)["success"]
             observed = {}
             probe_reference = 0
+            array_references = {}
+            array_counts = {}
             for scope in scopes["body"]["scopes"]:
                 send(7, "variables", {"variablesReference": scope["variablesReference"]})
                 values = expect(lambda item: item.get("request_seq") == 7)
@@ -647,11 +652,39 @@ def local_scalar_values(binary, gdb):
                 for item in values["body"]["variables"]:
                     if item["name"] == "probe":
                         probe_reference = item["variablesReference"]
+                    if item["name"] in ("COUNTS", "FLAGS", "LABELS"):
+                        array_references[item["name"]] = item["variablesReference"]
+                        array_counts[item["name"]] = item.get("indexedVariables")
             assert observed.get("local") == "7" and observed.get("value") == "2", observed
             assert observed.get("rate") == "2.5" and observed.get("ready") == "true", observed
             assert observed.get("message") == '"launch 🚀 \\\\360"', observed
             assert observed.get("label") == '"ship 🚀"', observed
             assert probe_reference > 0 and observed.get("probe") == "<Probe>", observed
+            assert all(array_references.get(name, 0) > 0
+                       for name in ("COUNTS", "FLAGS", "LABELS")), array_references
+            assert array_counts == {"COUNTS": 3, "FLAGS": 2, "LABELS": 2}, array_counts
+            send(32, "variables", {"variablesReference": array_references["COUNTS"],
+                                    "start": 1, "count": 2})
+            count_items = expect(lambda item: item.get("request_seq") == 32)
+            assert count_items["success"] and \
+                [(item["name"], item["value"], item["type"])
+                 for item in count_items["body"]["variables"]] == \
+                [("[1]", "5", "Int8"), ("[2]", "8", "Int8")], count_items
+            send(33, "variables", {"variablesReference": array_references["FLAGS"]})
+            flag_items = expect(lambda item: item.get("request_seq") == 33)
+            assert flag_items["success"] and \
+                [item["value"] for item in flag_items["body"]["variables"]] == \
+                ["true", "false"], flag_items
+            send(34, "variables", {"variablesReference": array_references["LABELS"]})
+            label_items = expect(lambda item: item.get("request_seq") == 34)
+            assert label_items["success"] and \
+                [item["value"] for item in label_items["body"]["variables"]] == \
+                ['"alpha"', '"beta 🚀"'], label_items
+            assert all(item["variablesReference"] == 0
+                       for response in (count_items, flag_items, label_items)
+                       for item in response["body"]["variables"])
+            send(35, "variables", {"variablesReference": array_references["COUNTS"], "start": 4})
+            assert not expect(lambda item: item.get("request_seq") == 35)["success"]
             send(20, "variables", {"variablesReference": probe_reference})
             fields = expect(lambda item: item.get("request_seq") == 20)
             assert fields["success"], fields
@@ -710,6 +743,8 @@ def local_scalar_values(binary, gdb):
             assert not expect(lambda item: item.get("request_seq") == 29)["success"]
             send(31, "variables", {"variablesReference": payload_reference})
             assert not expect(lambda item: item.get("request_seq") == 31)["success"]
+            send(36, "variables", {"variablesReference": array_references["COUNTS"]})
+            assert not expect(lambda item: item.get("request_seq") == 36)["success"]
             resumed_stop = expect(lambda item: item.get("event") == "stopped")
             send(13, "stackTrace", {"threadId": resumed_stop["body"]["threadId"]})
             resumed_stack = expect(lambda item: item.get("request_seq") == 13)

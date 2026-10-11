@@ -235,7 +235,10 @@ The granular `debugClassFields` capability is also true; `debugVariables` and
 adds exact read-only lookup of one direct scalar/String class field without
 claiming general expression evaluation.
 The granular `debugNestedClass` slice adds one class-valued child expansion;
-recursive object graphs and collections remain future gates.
+recursive object graphs remain a future gate. The granular `debugArrayView`
+slice adds bounded, paged inspection of initialized constant arrays containing
+only Bool, numeric, or String values through a compiler-generated debug-only
+snapshot. Mutable and nested collections remain future gates.
 
 ## Phase 8 — Language Server Protocol transport
 
