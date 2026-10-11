@@ -335,7 +335,8 @@ imported module. It is not yet a supported release debugger: reliable Sagan
 values, complete stepping contexts, failure mapping, distributable Linux
 validation, and the GDB runtime package remain incomplete. `debugExceptions`
 is true only for raised Sagan exceptions. `debugClassFields` is separately true
-for direct scalar/String field expansion; aggregate variable/evaluation flags stay false.
+for direct scalar/String field expansion, and `debugMemberEvaluate` covers an
+exact local plus one direct field. Aggregate variable/evaluation flags stay false.
 Explicit `test "name" { ... }`
 declarations now parse and type-check, and `tests.hpp` discovers them in a
 document or resolved project with stable ID, URI, UTF-16 name range, and
