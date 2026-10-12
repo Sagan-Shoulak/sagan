@@ -1,10 +1,18 @@
 module hierarchy
 
 class System {
-  fun status(): Int => 42
+  let value: Int
+
+  new(value: Int) {
+    self.value = value
+  }
+
+  fun status(): Int => self.value
 }
 
 class LifeSupport is System {
+  new(value: Int) is System(value) {
+  }
 }
 
 export System

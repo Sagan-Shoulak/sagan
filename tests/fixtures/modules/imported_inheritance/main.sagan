@@ -4,7 +4,7 @@ import System from hierarchy
 import LifeSupport from hierarchy
 
 fun main(): Int {
-  let support = LifeSupport()
+  let support = LifeSupport(42)
   assert(LifeSupport is System)
   assert(support.status() == 42)
   print("Imported inheritance passed")
