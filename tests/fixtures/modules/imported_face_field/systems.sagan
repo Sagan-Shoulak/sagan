@@ -1,0 +1,13 @@
+module systems
+
+import Degradable from faces
+
+class System has Degradable {
+  new() {
+    self.durability = 100
+  }
+
+  fun status(): Int => self.durability
+}
+
+export System

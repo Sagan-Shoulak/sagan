@@ -47,6 +47,17 @@ TMPDIR="$repo_tmp_native" TMP="$repo_tmp_native" TEMP="$repo_tmp_native" \
   build/imported_inheritance.cpp -o "$imported_inheritance_output"
 [[ "$("$imported_inheritance_output" | tr -d '\r')" == "Imported inheritance passed" ]]
 
+bin/sagan --emit-cpp-modules tests/fixtures/modules/imported_face_field/main.sagan \
+  build/imported_face_field.cpp
+imported_face_field_output="build/imported_face_field"
+if [[ "${OS:-}" == "Windows_NT" ]]; then
+  imported_face_field_output="build/imported_face_field.exe"
+fi
+TMPDIR="$repo_tmp_native" TMP="$repo_tmp_native" TEMP="$repo_tmp_native" \
+  g++ -std=c++23 -Wall -Wextra -Wpedantic -Werror \
+  build/imported_face_field.cpp -o "$imported_face_field_output"
+[[ "$("$imported_face_field_output" | tr -d '\r')" == "Imported face field passed" ]]
+
 expect_failure() {
   local source="$1"
   local expected="$2"
