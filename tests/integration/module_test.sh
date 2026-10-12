@@ -36,6 +36,17 @@ TMPDIR="$repo_tmp_native" TMP="$repo_tmp_native" TEMP="$repo_tmp_native" \
   g++ -std=c++23 -Wall -Wextra -Wpedantic -Werror build/module_demo.cpp -o "$native_output"
 "$native_output"
 
+bin/sagan --emit-cpp-modules tests/fixtures/modules/imported_inheritance/main.sagan \
+  build/imported_inheritance.cpp
+imported_inheritance_output="build/imported_inheritance"
+if [[ "${OS:-}" == "Windows_NT" ]]; then
+  imported_inheritance_output="build/imported_inheritance.exe"
+fi
+TMPDIR="$repo_tmp_native" TMP="$repo_tmp_native" TEMP="$repo_tmp_native" \
+  g++ -std=c++23 -Wall -Wextra -Wpedantic -Werror \
+  build/imported_inheritance.cpp -o "$imported_inheritance_output"
+[[ "$("$imported_inheritance_output" | tr -d '\r')" == "Imported inheritance passed" ]]
+
 expect_failure() {
   local source="$1"
   local expected="$2"
@@ -95,4 +106,4 @@ if [[ "$namespace_status" -eq 0 || "$namespace_output" != *"Module 'support' doe
 fi
 echo "Confirmed namespace visibility error: private member is inaccessible"
 
-echo "Module test passed: sibling resolution, transitive dependencies, selective and namespace imports, export visibility, semantic/type linking, native execution, and cycle diagnostics are working."
+echo "Module test passed: sibling resolution, transitive dependencies, selective and namespace imports, imported inheritance, export visibility, semantic/type linking, native execution, and cycle diagnostics are working."

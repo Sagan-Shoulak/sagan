@@ -1,0 +1,14 @@
+module main
+
+import System from hierarchy
+import LifeSupport from hierarchy
+
+fun main(): Int {
+  let support = LifeSupport()
+  assert(LifeSupport is System)
+  assert(support.status() == 42)
+  print("Imported inheritance passed")
+  return 0
+}
+
+exit(main())

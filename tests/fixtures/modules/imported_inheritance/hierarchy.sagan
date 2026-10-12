@@ -1,0 +1,11 @@
+module hierarchy
+
+class System {
+  fun status(): Int => 42
+}
+
+class LifeSupport is System {
+}
+
+export System
+export LifeSupport

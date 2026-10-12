@@ -740,6 +740,8 @@ namespace modules
         {
           if (top_level)
             if (const auto found = bindings.find(type->name); found != bindings.end()) type->name = found->second;
+          for (auto &base : type->base_classes)
+            if (const auto found = bindings.find(base); found != bindings.end()) base = found->second;
           for (auto &face : type->composed_interfaces)
             if (const auto found = bindings.find(face); found != bindings.end()) face = found->second;
           locals.emplace_back();
