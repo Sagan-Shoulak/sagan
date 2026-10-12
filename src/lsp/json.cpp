@@ -1,9 +1,14 @@
 #include "json.hpp"
 #include "../parser/unicode.hpp"
 
+#include <algorithm>
 #include <charconv>
 #include <cmath>
 #include <cstdio>
+#include <iomanip>
+#include <limits>
+#include <locale>
+#include <sstream>
 #include <stdexcept>
 
 namespace sagan::lsp::json
@@ -203,8 +208,15 @@ namespace sagan::lsp::json
           if (fractional)
           {
             double parsed{};
-            const auto converted = std::from_chars(number.data(), number.data() + number.size(), parsed);
-            if (converted.ec != std::errc{} || !std::isfinite(parsed))
+            std::istringstream stream{std::string(number)};
+            stream.imbue(std::locale::classic());
+            stream >> parsed;
+            const auto exponent = number.find_first_of("eE");
+            const auto significand = number.substr(0, exponent);
+            const bool nonzero_significand = std::any_of(significand.begin(), significand.end(),
+                [](const char digit) { return digit >= '1' && digit <= '9'; });
+            if (!stream || stream.peek() != std::char_traits<char>::eof() || !std::isfinite(parsed) ||
+                (parsed == 0.0 && nonzero_significand))
               throw std::runtime_error("Invalid JSON number");
             result = parsed;
           }
@@ -260,10 +272,12 @@ namespace sagan::lsp::json
     if (const auto *integer = std::get_if<std::int64_t>(&item.data)) return std::to_string(*integer);
     if (const auto *number = std::get_if<double>(&item.data))
     {
-      char buffer[64]{};
-      const auto result = std::to_chars(buffer, buffer + sizeof(buffer), *number);
-      if (result.ec != std::errc{}) throw std::runtime_error("Could not serialize JSON number");
-      return {buffer, result.ptr};
+      if (!std::isfinite(*number)) throw std::runtime_error("Could not serialize JSON number");
+      std::ostringstream output;
+      output.imbue(std::locale::classic());
+      output << std::setprecision(std::numeric_limits<double>::max_digits10) << *number;
+      if (!output) throw std::runtime_error("Could not serialize JSON number");
+      return output.str();
     }
     if (const auto *string = std::get_if<std::string>(&item.data)) return quote_string(*string);
     if (const auto *array = item.elements())

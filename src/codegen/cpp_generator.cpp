@@ -1579,7 +1579,8 @@ namespace codegen
       }
 
       auto method(const parser::function_declaration &value, const std::string_view class_name = {},
-                  const bool virtual_method = false, const bool declaration_only = false) -> void
+                  const bool virtual_method = false, const bool declaration_only = false,
+                  const bool override_method = false) -> void
       {
         map_scope mapped(*this, value.range, false,
                          std::string(class_name) + "::" + identifier(value.name));
@@ -1618,6 +1619,7 @@ namespace codegen
                                                     value.parameters[index].type_name.value_or("Unknown"));
         }
         output << ')';
+        if (override_method) output << " override";
         if (value.constructor_member && !value.parent_initializers.empty())
         {
           initializer_parameters.clear();
@@ -1714,6 +1716,54 @@ namespace codegen
         for (const auto &parameter : value.parameters)
           result += parameter.type_name.value_or("Unknown") + ";";
         return result + "):" + value.return_type.value_or("Unknown");
+      }
+
+      auto face_method_signatures(const std::string &name,
+                                  std::unordered_set<std::string> &visited) const
+          -> std::unordered_set<std::string>
+      {
+        const std::string base = name.substr(0, name.find('<'));
+        if (!visited.insert(base).second) return {};
+        const auto found = face_types.find(base);
+        if (found == face_types.end()) return {};
+        std::unordered_set<std::string> result;
+        for (const auto &parent : found->second->composed_interfaces)
+        {
+          auto inherited = face_method_signatures(parent, visited);
+          result.insert(inherited.begin(), inherited.end());
+        }
+        for (const auto &entry : found->second->members)
+          if (const auto *method_value = dynamic_cast<const parser::function_declaration *>(entry.get());
+              method_value && method_value->type_parameters.empty())
+            result.insert(method_signature(*method_value));
+        return result;
+      }
+
+      auto class_method_signatures(const std::string &name,
+                                   std::unordered_set<std::string> &visited) const
+          -> std::unordered_set<std::string>
+      {
+        const std::string base = name.substr(0, name.find('<'));
+        if (!visited.insert(base).second) return {};
+        const auto found = class_declarations.find(base);
+        if (found == class_declarations.end()) return {};
+        std::unordered_set<std::string> result;
+        for (const auto &parent : found->second->base_classes)
+        {
+          auto inherited = class_method_signatures(parent, visited);
+          result.insert(inherited.begin(), inherited.end());
+        }
+        for (const auto &face : found->second->composed_interfaces)
+        {
+          std::unordered_set<std::string> face_visited;
+          auto inherited = face_method_signatures(face, face_visited);
+          result.insert(inherited.begin(), inherited.end());
+        }
+        for (const auto &entry : found->second->members)
+          if (const auto *method_value = dynamic_cast<const parser::function_declaration *>(entry.get());
+              method_value && !method_value->constructor_member && method_value->type_parameters.empty())
+            result.insert(method_signature(*method_value));
+        return result;
       }
 
       auto face_defaults(const std::string &name,
@@ -1867,6 +1917,19 @@ namespace codegen
           output << indentation() << field.type << ' ' << identifier(name) << "{};\n";
         }
         std::unordered_set<std::string> emitted_methods;
+        std::unordered_set<std::string> inherited_methods;
+        for (const auto &parent : value.base_classes)
+        {
+          std::unordered_set<std::string> visited;
+          auto inherited = class_method_signatures(parent, visited);
+          inherited_methods.insert(inherited.begin(), inherited.end());
+        }
+        for (const auto &face : value.composed_interfaces)
+        {
+          std::unordered_set<std::string> visited;
+          auto inherited = face_method_signatures(face, visited);
+          inherited_methods.insert(inherited.begin(), inherited.end());
+        }
         for (const auto &entry : value.members)
         {
           if (const auto *field = dynamic_cast<const parser::let_declaration *>(entry.get()))
@@ -1905,7 +1968,8 @@ namespace codegen
               private_access = member_method->private_member;
               output << (private_access ? "private:\n" : "public:\n");
             }
-            method(*member_method, value.name, member_method->type_parameters.empty());
+            method(*member_method, value.name, member_method->type_parameters.empty(), false,
+                   inherited_methods.contains(method_signature(*member_method)));
           }
           else fail("class member is not available in the initial native object subset", entry->range);
         }
@@ -1921,7 +1985,7 @@ namespace codegen
             {
               const auto previous_source = active_source;
               source_of(*owner);
-              method(*default_method);
+              method(*default_method, value.name, true, false, true);
               active_source = previous_source;
             }
           }

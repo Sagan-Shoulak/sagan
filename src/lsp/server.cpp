@@ -229,7 +229,7 @@ namespace sagan::lsp
       output.flush();
     };
     service.set_notification_sink(send);
-    std::jthread worker([&]
+    std::thread worker([&]
     {
       for (;;)
       {

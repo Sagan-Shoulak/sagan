@@ -18,6 +18,7 @@ output=$(build/class_inheritance)
 test "$output" = "class inheritance passed"
 echo "$output"
 bin/sagan --emit-cpp tests/fixtures/runtime/face_member_promises.sagan build/face_member_promises.cpp
+grep -Eq 'override[[:space:]]*\{' build/face_member_promises.cpp
 g++ -std=c++23 -Wall -Wextra -Wpedantic -Werror build/face_member_promises.cpp -o build/face_member_promises
 build/face_member_promises
 echo "Face member promises passed"
