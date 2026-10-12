@@ -30,6 +30,7 @@ tests=(
   array_times_parallel_test.sh
   parallel_let_fibonacci_test.sh
   mixed_exponent_test.sh
+  time_support_test.sh
   root_script_test.sh
   assert_test.sh
 )

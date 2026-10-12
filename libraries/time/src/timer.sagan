@@ -1,0 +1,97 @@
+module timer
+
+import Duration from duration
+import Instant from monotonic
+
+class Stopwatch {
+  let.started: Instant
+
+  new(started: Instant) {
+    self.started = started
+  }
+
+  fun elapsed(at: Instant): Duration => at.since(self.started)
+  fun elapsed_now(): Duration =>
+    Instant(__time_monotonic_nanoseconds()).since(self.started)
+  fun restart!(at: Instant): Duration {
+    let elapsed = at.since(self.started)
+    self.started = at
+    return elapsed
+  }
+}
+
+fun stopwatch(): Stopwatch => Stopwatch(Instant(__time_monotonic_nanoseconds()))
+
+class Deadline {
+  let.value: Instant
+
+  new(value: Instant) {
+    self.value = value
+  }
+
+  fun reached(at: Instant): Bool => at.reached(self.value)
+  fun remaining(at: Instant): Duration {
+    if at.reached(self.value) { return Duration(0 nanosecond) }
+    return self.value.since(at)
+  }
+}
+
+fun deadline_after(start: Instant, span: Duration): Deadline =>
+  Deadline(start.plus(span))
+
+class OneShotTimer {
+  let.deadline_value: Deadline
+  let.fired: Bool = false
+
+  new(deadline: Deadline) {
+    self.deadline_value = deadline
+  }
+
+  fun poll!(at: Instant): Bool {
+    if self.fired { return false }
+    if self.deadline_value.reached(at) {
+      self.fired = true
+      return true
+    }
+    return false
+  }
+}
+
+class RepeatingTimer {
+  let.next: Instant
+  let.interval: Duration
+  let.maximum_expirations: Int64
+
+  new(first: Instant, interval: Duration, maximum_expirations: Int64) {
+    assert(interval.nanoseconds() > 0 nanosecond,
+           "RepeatingTimer interval must be positive")
+    assert(maximum_expirations > 0,
+           "RepeatingTimer maximum expirations must be positive")
+    self.next = first
+    self.interval = interval
+    self.maximum_expirations = maximum_expirations
+  }
+
+  /// Return bounded catch-up expirations and skip any older missed intervals.
+  fun poll!(at: Instant): Int64 {
+    let expirations: Int64 = 0
+    while at.reached(self.next) and expirations < self.maximum_expirations {
+      expirations += 1
+      self.next = self.next.plus(self.interval)
+    }
+    if at.reached(self.next) {
+      let overdue = at.since(self.next)
+      let remainder = __time_remainder_nanoseconds(
+        overdue.nanoseconds(), self.interval.nanoseconds())
+      self.next = at.plus(Duration(self.interval.nanoseconds() - remainder))
+    }
+    return expirations
+  }
+}
+
+export Stopwatch
+export Deadline
+export OneShotTimer
+export RepeatingTimer
+export stopwatch
+export deadline_after

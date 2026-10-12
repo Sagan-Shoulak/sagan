@@ -1,0 +1,70 @@
+module monotonic
+
+import Duration from duration
+
+/// A process-relative point from the monotonic clock. Its epoch is unspecified.
+class Instant {
+  let.nanoseconds_value: Int64<nanosecond>
+
+  new(nanoseconds: Int64<nanosecond>) {
+    self.nanoseconds_value = nanoseconds
+  }
+
+  fun nanoseconds(): Int64<nanosecond> => self.nanoseconds_value
+  fun since(earlier: Instant): Duration =>
+    Duration(self.nanoseconds_value - earlier.nanoseconds())
+  fun plus(span: Duration): Instant =>
+    Instant(self.nanoseconds_value + span.nanoseconds())
+  fun minus(span: Duration): Instant =>
+    Instant(self.nanoseconds_value - span.nanoseconds())
+  fun before(other: Instant): Bool => self.nanoseconds_value < other.nanoseconds()
+  fun reached(other: Instant): Bool => self.nanoseconds_value >= other.nanoseconds()
+}
+
+/// Read the operating system's monotonic clock.
+fun now(): Instant => Instant(__time_monotonic_nanoseconds())
+
+/// Report the native monotonic clock's nominal resolution.
+fun resolution(): Duration =>
+  Duration(__time_monotonic_resolution_nanoseconds())
+
+/// Block the current thread for at least a non-negative duration.
+fun sleep(span: Duration): Void => __time_sleep_nanoseconds(span.nanoseconds())
+
+/// Block until a monotonic deadline; an expired deadline returns immediately.
+fun sleep_until(deadline: Instant): Void {
+  let current = now()
+  while current.before(deadline) {
+    let remaining = deadline.since(current)
+    sleep(remaining)
+    current = now()
+  }
+}
+
+/// A deterministic monotonic clock advanced explicitly by its owner.
+class ManualClock {
+  let.current: Instant
+
+  new(start: Instant) {
+    self.current = start
+  }
+
+  fun now(): Instant => self.current
+  fun advance!(span: Duration): Instant {
+    assert(span.is_negative() == false, "a ManualClock cannot advance backward")
+    self.current = self.current.plus(span)
+    return self.current
+  }
+}
+
+fun zero_instant(): Instant => Instant(0 nanosecond)
+fun manual_clock(): ManualClock => ManualClock(zero_instant())
+
+export Instant
+export ManualClock
+export now
+export resolution
+export sleep
+export sleep_until
+export zero_instant
+export manual_clock

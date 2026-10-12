@@ -1,0 +1,152 @@
+module game
+
+import Duration from duration
+import Instant from monotonic
+
+/// Immutable timing data for one display frame.
+class FrameTime {
+  let.delta_value: Duration
+  let.unscaled_delta_value: Duration
+  let.elapsed_value: Duration
+  let.frame_index_value: Int64
+
+  new(delta: Duration, unscaled_delta: Duration, elapsed: Duration,
+      frame_index: Int64) {
+    self.delta_value = delta
+    self.unscaled_delta_value = unscaled_delta
+    self.elapsed_value = elapsed
+    self.frame_index_value = frame_index
+  }
+
+  fun delta(): Duration => self.delta_value
+  fun delta_seconds(): Float64<second> => self.delta_value.seconds()
+  fun unscaled_delta(): Duration => self.unscaled_delta_value
+  fun unscaled_delta_seconds(): Float64<second> => self.unscaled_delta_value.seconds()
+  fun elapsed(): Duration => self.elapsed_value
+  fun frame_index(): Int64 => self.frame_index_value
+}
+
+/// Explicit variable-step gameplay clock backed by the monotonic system clock.
+class FrameClock {
+  let.previous: Instant
+  let.elapsed_value: Duration = Duration(0 nanosecond)
+  let.maximum_delta: Duration
+  let.time_scale: Float64 = 1.0
+  let.frame_index_value: Int64 = 0
+  let.initialized: Bool = false
+  let.paused: Bool = false
+
+  new(maximum_delta: Duration) {
+    assert(maximum_delta.is_negative() == false,
+           "FrameClock maximum delta must be non-negative")
+    self.maximum_delta = maximum_delta
+    self.previous = Instant(__time_monotonic_nanoseconds())
+  }
+
+  fun tick!(): FrameTime {
+    let current = Instant(__time_monotonic_nanoseconds())
+    if self.initialized == false {
+      self.previous = current
+      self.initialized = true
+      return FrameTime(Duration(0 nanosecond), Duration(0 nanosecond), self.elapsed_value,
+                       self.frame_index_value)
+    }
+    let unscaled = current.since(self.previous)
+    self.previous = current
+    if unscaled.nanoseconds() > self.maximum_delta.nanoseconds() {
+      unscaled = self.maximum_delta
+    }
+    let scaled = unscaled.scaled(self.time_scale)
+    if self.paused {
+      scaled = Duration(0 nanosecond)
+    }
+    self.elapsed_value = self.elapsed_value.plus(scaled)
+    self.frame_index_value += 1
+    return FrameTime(scaled, unscaled, self.elapsed_value, self.frame_index_value)
+  }
+
+  fun set_time_scale!(scale: Float64): Void {
+    assert(scale - scale == 0.0, "FrameClock time scale must be finite")
+    assert(scale >= 0.0, "FrameClock time scale must be non-negative")
+    self.time_scale = scale
+  }
+
+  fun set_paused!(paused: Bool): Void {
+    self.paused = paused
+  }
+
+  fun set_maximum_delta!(maximum_delta: Duration): Void {
+    assert(maximum_delta.is_negative() == false,
+           "FrameClock maximum delta must be non-negative")
+    self.maximum_delta = maximum_delta
+  }
+
+  fun elapsed(): Duration => self.elapsed_value
+}
+
+fun frame_clock(): FrameClock =>
+  FrameClock(Duration(__time_seconds_to_nanoseconds(0.25 second)))
+
+/// Result of accumulating one display-frame duration into a fixed-step clock.
+class FixedStepBatch {
+  let.steps_value: Int64
+  let.step_value: Duration
+  let.interpolation_value: Float64
+  let.dropped_time_value: Duration
+
+  new(steps: Int64, step: Duration, interpolation: Float64,
+      dropped_time: Duration) {
+    self.steps_value = steps
+    self.step_value = step
+    self.interpolation_value = interpolation
+    self.dropped_time_value = dropped_time
+  }
+
+  fun steps(): Int64 => self.steps_value
+  fun step(): Duration => self.step_value
+  fun step_seconds(): Float64<second> => self.step_value.seconds()
+  fun interpolation(): Float64 => self.interpolation_value
+  fun dropped_time(): Duration => self.dropped_time_value
+}
+
+/// Bounded fixed-step accumulator for deterministic simulation updates.
+class FixedStepClock {
+  let.step_value: Duration
+  let.maximum_steps: Int64
+  let.accumulator: Duration = Duration(0 nanosecond)
+
+  new(step: Duration, maximum_steps: Int64) {
+    assert(step.nanoseconds() > 0 nanosecond,
+           "FixedStepClock step must be positive")
+    assert(maximum_steps > 0, "FixedStepClock maximum steps must be positive")
+    self.step_value = step
+    self.maximum_steps = maximum_steps
+  }
+
+  fun advance!(delta: Duration): FixedStepBatch {
+    assert(delta.is_negative() == false,
+           "FixedStepClock delta must be non-negative")
+    self.accumulator = self.accumulator.plus(delta)
+    let steps: Int64 = 0
+    while self.accumulator.nanoseconds() >= self.step_value.nanoseconds() and
+          steps < self.maximum_steps {
+      self.accumulator = self.accumulator.minus(self.step_value)
+      steps += 1
+    }
+    let dropped = Duration(0 nanosecond)
+    if self.accumulator.nanoseconds() >= self.step_value.nanoseconds() {
+      let remainder = __time_remainder_nanoseconds(
+        self.accumulator.nanoseconds(), self.step_value.nanoseconds())
+      dropped = Duration(self.accumulator.nanoseconds() - remainder)
+      self.accumulator = Duration(remainder)
+    }
+    return FixedStepBatch(steps, self.step_value,
+                          self.accumulator.ratio(self.step_value), dropped)
+  }
+}
+
+export FrameTime
+export FrameClock
+export FixedStepBatch
+export FixedStepClock
+export frame_clock
