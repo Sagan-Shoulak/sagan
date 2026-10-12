@@ -1,0 +1,8 @@
+module main
+
+import duration from time.duration
+import sleep from time.monotonic
+
+print("macOS bundle run started")
+sleep(duration(2.0 second))
+print("macOS bundle run passed")

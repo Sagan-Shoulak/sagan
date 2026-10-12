@@ -78,6 +78,22 @@ The bundle's `CFBundleExecutable` is `Sagan` and `CFBundleIconFile` is
 `sagan.icns`. Launch the bundle rather than the loose Mach-O executable when
 verifying Finder, Dock, and application-switcher behavior.
 
+For compiler-owned development runs, `sagan --run-package` automatically uses
+a temporary `Sagan.app` layout when the package manifest declares
+`[application] mode = "windowed"`. Its executable is
+`Sagan.app/Contents/MacOS/program`, its icon is the canonical `sagan.icns`, and
+its generated bundle identifier is `org.sagan.generated`. Sagan invokes that
+Mach-O executable directly from inside the bundle rather than launching it
+through `open`; this preserves the package working directory, environment,
+synchronous exit status, diagnostics, cancellation, and temporary-artifact
+cleanup. Console packages continue to use a loose executable and do not create
+an application bundle.
+
+The temporary development bundle is not a distribution format. A downstream
+packager still owns its permanent product name, stable bundle identifier,
+version metadata, signing, notarization, and installation layout, while copying
+the compiler-returned canonical icon unchanged.
+
 `scripts/application_icon_test.py` validates the committed ICO, PNG, and ICNS
 formats on every host. Windows resource inspection additionally verifies the
 icon embedded in a generated executable. Downstream repositories test their

@@ -1,0 +1,11 @@
+[package]
+name = "macos-bundle-run-test"
+version = "0.1.0"
+source = "src"
+entry = "main"
+
+[application]
+mode = "windowed"
+
+[dependencies]
+time = { package = "sagan-time", version = "^0.1.0" }

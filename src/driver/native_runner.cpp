@@ -211,6 +211,8 @@ namespace driver
   auto compilation_inputs_for(const modules::module_graph &graph) -> native_compilation_inputs
   {
     native_compilation_inputs result;
+    if (graph.package)
+      result.windowed = graph.package->mode == modules::application_mode::windowed;
     for (const auto &module : graph.modules)
     {
       const auto root = module.path.parent_path().parent_path();
@@ -295,12 +297,56 @@ namespace driver
                              " is missing; rebuild or reinstall the Sagan toolchain with application assets");
   }
 
+  auto prepare_macos_application_bundle(const std::filesystem::path &build_root)
+      -> std::filesystem::path
+  {
+    const auto contents = build_root / "Sagan.app" / "Contents";
+    const auto executable = contents / "MacOS" / "program";
+    const auto resources = contents / "Resources";
+    std::error_code error;
+    std::filesystem::create_directories(executable.parent_path(), error);
+    if (error) throw std::runtime_error("Could not create macOS application executable directory: " +
+                                        error.message());
+    std::filesystem::create_directories(resources, error);
+    if (error) throw std::runtime_error("Could not create macOS application resource directory: " +
+                                        error.message());
+    std::filesystem::copy_file(application_icon_resource("macos"), resources / "sagan.icns",
+                               std::filesystem::copy_options::overwrite_existing, error);
+    if (error) throw std::runtime_error("Could not stage the canonical macOS application icon: " +
+                                        error.message());
+    std::ofstream plist(contents / "Info.plist", std::ios::binary);
+    if (!plist) throw std::runtime_error("Could not create macOS application Info.plist");
+    plist << "<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n"
+             "<!DOCTYPE plist PUBLIC \"-//Apple//DTD PLIST 1.0//EN\" "
+             "\"http://www.apple.com/DTDs/PropertyList-1.0.dtd\">\n"
+             "<plist version=\"1.0\">\n"
+             "<dict>\n"
+             "  <key>CFBundleDevelopmentRegion</key><string>en</string>\n"
+             "  <key>CFBundleExecutable</key><string>program</string>\n"
+             "  <key>CFBundleIconFile</key><string>sagan.icns</string>\n"
+             "  <key>CFBundleIdentifier</key><string>org.sagan.generated</string>\n"
+             "  <key>CFBundleInfoDictionaryVersion</key><string>6.0</string>\n"
+             "  <key>CFBundleName</key><string>Sagan</string>\n"
+             "  <key>CFBundlePackageType</key><string>APPL</string>\n"
+             "  <key>CFBundleShortVersionString</key><string>1.0</string>\n"
+             "  <key>CFBundleVersion</key><string>1</string>\n"
+             "  <key>NSHighResolutionCapable</key><true/>\n"
+             "</dict>\n"
+             "</plist>\n";
+    plist.close();
+    if (!plist) throw std::runtime_error("Could not write macOS application Info.plist");
+    return executable;
+  }
+
   auto compile_and_run(const std::string &generated_cpp, const native_compilation_inputs &inputs) -> int
   {
     temporary_directory build;
     const auto source = build.path() / "program.cpp";
 #ifdef _WIN32
     const auto executable = build.path() / "program.exe";
+#elif defined(__APPLE__)
+    const auto executable = inputs.windowed ? prepare_macos_application_bundle(build.path())
+                                            : build.path() / "program";
 #else
     const auto executable = build.path() / "program";
 #endif

@@ -55,13 +55,17 @@ jobs:
         with:
           fetch-depth: 0
       - name: Build compiler and language server
-        run: make CXX=clang++ all bin/sagan-lsp bin/json-test bin/lsp-worker-test
+        run: make CXX=clang++ all bin/sagan-lsp bin/json-test bin/lsp-worker-test bin/macos-bundle-test
       - name: Verify portable JSON floats
         run: bin/json-test
       - name: Verify LSP worker lifecycle
         run: bin/lsp-worker-test
       - name: Verify generated override contracts
         run: bash tests/integration/class_inheritance_test.sh
+      - name: Verify macOS application bundle contract
+        run: |
+          bin/macos-bundle-test
+          bash tests/integration/macos_bundle_run_test.sh
       - name: Verify package emission and native execution
         run: |
           bin/sagan --emit-cpp-package examples/package build/macos-package.cpp

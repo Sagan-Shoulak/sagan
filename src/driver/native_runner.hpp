@@ -16,6 +16,7 @@ namespace driver
     std::optional<std::filesystem::path> source;
     std::optional<std::filesystem::path> working_directory;
     std::vector<std::string> libraries;
+    bool windowed{};
   };
 
   auto compilation_inputs_for(const modules::module_graph &graph) -> native_compilation_inputs;
@@ -29,6 +30,8 @@ namespace driver
   auto configured_compiler() -> native_compiler_configuration;
   auto application_icon_resource(const std::string &platform) -> std::filesystem::path;
   auto native_icon_resource() -> std::optional<std::filesystem::path>;
+  auto prepare_macos_application_bundle(const std::filesystem::path &build_root)
+      -> std::filesystem::path;
   auto compile_and_run(const std::string &generated_cpp,
                        const native_compilation_inputs &inputs = {}) -> int;
 }
