@@ -644,6 +644,12 @@ namespace modules
           annotation(parameter.type_name);
           locals.back().insert(parameter.name);
         }
+        for (auto &parent : value.parent_initializers)
+        {
+          if (const auto found = bindings.find(parent.name); found != bindings.end())
+            parent.name = found->second;
+          for (auto &argument : parent.arguments) expression(argument);
+        }
         if (value.body) block(*value.body);
         if (value.expression_body) expression(value.expression_body);
         locals.pop_back();
