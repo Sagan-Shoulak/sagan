@@ -2219,7 +2219,7 @@ namespace
     if (result.generated_source && result.executable)
     {
       const auto directory = result.generated_source->parent_path();
-      if (directory == result.executable->parent_path() && directory.parent_path() == artifact_root)
+      if (directory.parent_path() == artifact_root)
       {
         std::error_code ignored;
         std::filesystem::remove_all(directory, ignored);

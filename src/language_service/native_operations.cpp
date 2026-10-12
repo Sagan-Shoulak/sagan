@@ -297,10 +297,14 @@ namespace sagan::language_service
       if (result.generated_source && result.generated_source->filename() == "program.cpp")
       {
         const auto directory = result.generated_source->parent_path();
-        if (directory.filename().string().starts_with("sagan-") && result.executable &&
+        const auto loose_program = result.executable &&
             result.executable->parent_path() == directory &&
             (result.executable->filename() == "program.exe" ||
-             result.executable->filename() == "program"))
+             result.executable->filename() == "program");
+        const auto macos_program = result.executable &&
+            *result.executable == directory / "Sagan.app" / "Contents" / "MacOS" / "program";
+        if (directory.filename().string().starts_with("sagan-") &&
+            (loose_program || macos_program))
         {
           std::error_code ignored;
           std::filesystem::remove_all(directory, ignored);
@@ -344,6 +348,9 @@ namespace sagan::language_service
       result.generated_source = directory / "program.cpp";
 #ifdef _WIN32
       result.executable = directory / "program.exe";
+#elif defined(__APPLE__)
+      result.executable = inputs.windowed ? driver::prepare_macos_application_bundle(directory)
+                                          : directory / "program";
 #else
       result.executable = directory / "program";
 #endif
