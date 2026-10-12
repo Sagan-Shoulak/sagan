@@ -1,0 +1,31 @@
+module utc
+
+import Duration from duration
+
+/// An absolute UTC timestamp represented as Unix-epoch nanoseconds.
+class UtcInstant {
+  let.nanoseconds_value: Int64<nanosecond>
+
+  new(nanoseconds: Int64<nanosecond>) {
+    self.nanoseconds_value = nanoseconds
+  }
+
+  fun unix_nanoseconds(): Int64<nanosecond> => self.nanoseconds_value
+  fun format_iso8601(): String => __time_format_utc_iso8601(self.nanoseconds_value)
+  fun since(earlier: UtcInstant): Duration =>
+    Duration(self.nanoseconds_value - earlier.unix_nanoseconds())
+  fun plus(span: Duration): UtcInstant =>
+    UtcInstant(self.nanoseconds_value + span.nanoseconds())
+  fun before(other: UtcInstant): Bool =>
+    self.nanoseconds_value < other.unix_nanoseconds()
+}
+
+fun utc_now(): UtcInstant => UtcInstant(__time_utc_nanoseconds())
+fun utc_from_unix_nanoseconds(value: Int64<nanosecond>): UtcInstant => UtcInstant(value)
+fun parse_iso8601(value: String): UtcInstant =>
+  UtcInstant(__time_parse_utc_iso8601(value))
+
+export UtcInstant
+export utc_now
+export utc_from_unix_nanoseconds
+export parse_iso8601

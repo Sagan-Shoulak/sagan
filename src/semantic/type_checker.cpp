@@ -3286,6 +3286,28 @@ namespace semantic
         add_binding("__render_ui_pointer_released", binding{"Function", callable_signature{{}, "Bool", {}, {}}});
         add_binding("__render_ui_pointer_x", binding{"Function", callable_signature{{}, "Float64", {}, {}}});
         add_binding("__render_ui_pointer_y", binding{"Function", callable_signature{{}, "Float64", {}, {}}});
+        add_binding("__time_monotonic_nanoseconds",
+                    binding{"Function", callable_signature{{}, "Int64<nanosecond>", {}, {}}});
+        add_binding("__time_monotonic_resolution_nanoseconds",
+                    binding{"Function", callable_signature{{}, "Int64<nanosecond>", {}, {}}});
+        add_binding("__time_utc_nanoseconds",
+                    binding{"Function", callable_signature{{}, "Int64<nanosecond>", {}, {}}});
+        add_binding("__time_sleep_nanoseconds",
+                    binding{"Function", callable_signature{{"Int64<nanosecond>"}, "Void", {}, {}}});
+        add_binding("__time_seconds_to_nanoseconds",
+                    binding{"Function", callable_signature{{"Float64<second>"}, "Int64<nanosecond>", {}, {}}});
+        add_binding("__time_nanoseconds_to_seconds",
+                    binding{"Function", callable_signature{{"Int64<nanosecond>"}, "Float64<second>", {}, {}}});
+        add_binding("__time_scale_nanoseconds",
+                    binding{"Function", callable_signature{{"Int64<nanosecond>", "Float64"}, "Int64<nanosecond>", {}, {}}});
+        add_binding("__time_ratio",
+                    binding{"Function", callable_signature{{"Int64<nanosecond>", "Int64<nanosecond>"}, "Float64", {}, {}}});
+        add_binding("__time_remainder_nanoseconds",
+                    binding{"Function", callable_signature{{"Int64<nanosecond>", "Int64<nanosecond>"}, "Int64<nanosecond>", {}, {}}});
+        add_binding("__time_format_utc_iso8601",
+                    binding{"Function", callable_signature{{"Int64<nanosecond>"}, "String", {}, {}}});
+        add_binding("__time_parse_utc_iso8601",
+                    binding{"Function", callable_signature{{"String"}, "Int64<nanosecond>", {}, {}}});
         for (const auto &function : tree.native_functions)
         {
           callable_signature declared;

@@ -15,6 +15,7 @@ verified_by: null
 | Physics as explicit first-party core library | Decided | P0/P1 plus solar Lagrange experiment implemented as `sagan-physics` 0.3.0 |
 | Rendering as explicit first-party core library | Decided | R0-R3 implemented as `sagan-render` 0.5.1 |
 | Module and package names | Implemented for first slices | `render.window`, `render.canvas`, `physics.two_body`, and current Lagrange modules |
+| Native and gameplay time | Experimental | `time.duration`, `time.monotonic`, `time.game`, `time.timer`, and `time.utc` |
 | General standard-library boundary | Open | Not implemented |
 | Basic output intrinsic | Provisional | `print(value)` implemented for the native subset |
 

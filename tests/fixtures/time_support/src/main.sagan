@@ -1,0 +1,82 @@
+module main
+
+import duration from time.duration
+import duration_nanoseconds from time.duration
+import now from time.monotonic
+import sleep from time.monotonic
+import manual_clock from time.monotonic
+import zero_instant from time.monotonic
+import FixedStepClock from time.game
+import frame_clock from time.game
+import deadline_after from time.timer
+import OneShotTimer from time.timer
+import RepeatingTimer from time.timer
+import parse_iso8601 from time.utc
+
+fun main(): Int {
+  let exact = duration(0.016666667 second)
+  assert(exact.nanoseconds() == 16666667 nanosecond)
+  assert(exact.seconds() == 0.016666667 second)
+  assert(exact.scaled(2.0).nanoseconds() == 33333334 nanosecond)
+  assert(exact.ratio(exact) == 1.0)
+
+  let manual = manual_clock()
+  let start = manual.now()
+  manual.advance!(duration(0.25 second))
+  assert(manual.now().since(start).nanoseconds() == 250000000 nanosecond)
+
+  let one_shot = OneShotTimer(deadline_after(start, duration(0.1 second)))
+  assert(one_shot.poll!(start) == false)
+  assert(one_shot.poll!(manual.now()))
+  assert(one_shot.poll!(manual.now()) == false)
+
+  let repeating = RepeatingTimer(start.plus(duration(0.1 second)),
+                                 duration(0.1 second), 2)
+  assert(repeating.poll!(manual.now()) == 2)
+  manual.advance!(duration(0.3 second))
+  assert(repeating.poll!(manual.now()) == 2)
+  assert(repeating.poll!(manual.now()) == 0)
+  manual.advance!(duration(0.05 second))
+  assert(repeating.poll!(manual.now()) == 1)
+
+  let fixed = FixedStepClock(duration(0.01 second), 4)
+  let batch = fixed.advance!(duration(0.035 second))
+  assert(batch.steps() == 3)
+  assert(batch.step_seconds() == 0.01 second)
+  assert(batch.interpolation() == 0.5)
+  assert(batch.dropped_time().is_zero())
+  let overloaded = fixed.advance!(duration(0.1 second))
+  assert(overloaded.steps() == 4)
+  assert(overloaded.dropped_time().nanoseconds() == 60000000 nanosecond)
+
+  let timestamp = parse_iso8601("2026-10-11T23:58:57.123456789Z")
+  assert(timestamp.format_iso8601() == "2026-10-11T23:58:57.123456789Z")
+  let epoch = parse_iso8601("1970-01-01T00:00:00Z")
+  assert(epoch.unix_nanoseconds() == 0 nanosecond)
+  let earliest = parse_iso8601("1677-09-21T00:12:43.145224192Z")
+  assert(earliest.format_iso8601() == "1677-09-21T00:12:43.145224192Z")
+  let latest = parse_iso8601("2262-04-11T23:47:16.854775807Z")
+  assert(latest.format_iso8601() == "2262-04-11T23:47:16.854775807Z")
+  let rejected_timestamp = false
+  hope parse_iso8601("2026-02-29T00:00:00Z")
+  unless RuntimeError.invalid_conversion rejected_timestamp = true
+  assert(rejected_timestamp)
+
+  let before = now()
+  sleep(duration_nanoseconds(1000000 nanosecond))
+  let after = now()
+  assert(after.since(before).nanoseconds() >= 0 nanosecond)
+
+  let frames = frame_clock()
+  assert(frames.tick!().delta().is_zero())
+  sleep(duration_nanoseconds(1000000 nanosecond))
+  let frame = frames.tick!()
+  assert(frame.delta().nanoseconds() > 0 nanosecond)
+  assert(frame.delta().nanoseconds() <= 250000000 nanosecond)
+  assert(frame.frame_index() == 1)
+
+  print("Sagan time support passed")
+  return 0
+}
+
+exit(main())

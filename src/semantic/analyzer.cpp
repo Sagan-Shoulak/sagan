@@ -835,6 +835,20 @@ namespace semantic
           declare(std::string(bridge), symbol_kind::function, parser::span{0, 0},
                   symbol_visibility::private_access, symbol_origin::builtin,
                   {"Private sagan-render native bridge."});
+        for (const std::string_view bridge : {"__time_monotonic_nanoseconds",
+                                              "__time_monotonic_resolution_nanoseconds",
+                                              "__time_utc_nanoseconds",
+                                              "__time_sleep_nanoseconds",
+                                              "__time_seconds_to_nanoseconds",
+                                              "__time_nanoseconds_to_seconds",
+                                              "__time_scale_nanoseconds",
+                                              "__time_ratio",
+                                              "__time_remainder_nanoseconds",
+                                              "__time_format_utc_iso8601",
+                                              "__time_parse_utc_iso8601"})
+          declare(std::string(bridge), symbol_kind::function, parser::span{0, 0},
+                  symbol_visibility::private_access, symbol_origin::builtin,
+                  {"Private Sagan time-runtime bridge."});
         declare("Some", symbol_kind::function, parser::span{0, 0}, symbol_visibility::public_access,
                 symbol_origin::builtin, {"Wraps a present value in an Optional.",
                                          "@param value The present value."});

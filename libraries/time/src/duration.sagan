@@ -1,0 +1,36 @@
+module duration
+
+/// An exact signed elapsed-time span stored as checked nanoseconds.
+class Duration {
+  let.nanoseconds_value: Int64<nanosecond>
+
+  new(nanoseconds: Int64<nanosecond>) {
+    self.nanoseconds_value = nanoseconds
+  }
+
+  fun nanoseconds(): Int64<nanosecond> => self.nanoseconds_value
+  fun seconds(): Float64<second> =>
+    __time_nanoseconds_to_seconds(self.nanoseconds_value)
+  fun plus(other: Duration): Duration =>
+    Duration(self.nanoseconds_value + other.nanoseconds())
+  fun minus(other: Duration): Duration =>
+    Duration(self.nanoseconds_value - other.nanoseconds())
+  fun scaled(scale: Float64): Duration =>
+    Duration(__time_scale_nanoseconds(self.nanoseconds_value, scale))
+  fun ratio(other: Duration): Float64 =>
+    __time_ratio(self.nanoseconds_value, other.nanoseconds())
+  fun is_zero(): Bool => self.nanoseconds_value == 0 nanosecond
+  fun is_negative(): Bool => self.nanoseconds_value < 0 nanosecond
+}
+
+/// Convert seconds to exact nanoseconds using nearest rounding, ties to even.
+fun duration(value: Float64<second>): Duration =>
+  Duration(__time_seconds_to_nanoseconds(value))
+
+fun duration_nanoseconds(value: Int64<nanosecond>): Duration => Duration(value)
+fun zero_duration(): Duration => Duration(0 nanosecond)
+
+export Duration
+export duration
+export duration_nanoseconds
+export zero_duration

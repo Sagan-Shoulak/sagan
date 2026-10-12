@@ -125,6 +125,7 @@ nav:
       - Core libraries:
           - Overview: standard-library/index.md
           - Math: standard-library/math.md
+          - Time: standard-library/time.md
           - Physics: standard-library/physics.md
           - Rendering: standard-library/rendering.md
           - Two-body window roadmap: standard-library/two-body-window-roadmap.md
