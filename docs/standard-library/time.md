@@ -1,6 +1,6 @@
 ---
 title: Time library
-status: experimental
+status: work-in-progress
 publication_ready: false
 verified_in: null
 verified_on: null
