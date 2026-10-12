@@ -55,7 +55,17 @@ jobs:
         with:
           fetch-depth: 0
       - name: Build compiler and language server
-        run: make CXX=clang++ all bin/sagan-lsp
+        run: make CXX=clang++ all bin/sagan-lsp bin/json-test bin/lsp-worker-test
+      - name: Verify portable JSON floats
+        run: bin/json-test
+      - name: Verify LSP worker lifecycle
+        run: bin/lsp-worker-test
+      - name: Verify generated override contracts
+        run: bash tests/integration/class_inheritance_test.sh
+      - name: Verify package emission and native execution
+        run: |
+          bin/sagan --emit-cpp-package examples/package build/macos-package.cpp
+          bin/sagan --run-package examples/package
       - name: Verify warning-clean generated equality
         run: |
           bin/sagan --emit-cpp tests/fixtures/runtime/warning_clean_equality.sagan build/warning_clean_equality.cpp

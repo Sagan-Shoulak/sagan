@@ -83,6 +83,8 @@ PROCESS_TEST := bin/process-test
 NATIVE_OPERATIONS_TEST := bin/native-operations-test
 NATIVE_BRIDGE_TEST := bin/native-bridge-test
 LSP_TEST := bin/lsp-test
+LSP_WORKER_TEST := bin/lsp-worker-test
+JSON_TEST := bin/json-test
 CONSTANTS_TEST := bin/constants-test
 WINDOWS_LAUNCHER := bin/sagan-launch.exe
 WINDOWS_LAUNCHER_RESOURCE := obj/launcher/sagan-resource.o
@@ -202,6 +204,14 @@ $(LSP_TEST): tests/lsp_test.cpp obj/version.o $(COMPILER_LIBRARY)
 	@mkdir -p $(dir $@) $(BUILD_TMP)
 	$(TEMP_ENV) $(CXX) $(CXXFLAGS) $< obj/version.o $(COMPILER_LIBRARY) -o $@ -pthread $(WINDOWS_RUNTIME_LDFLAGS) $(LDFLAGS)
 
+$(LSP_WORKER_TEST): tests/lsp_worker_test.cpp obj/version.o $(COMPILER_LIBRARY)
+	@mkdir -p $(dir $@) $(BUILD_TMP)
+	$(TEMP_ENV) $(CXX) $(CXXFLAGS) $< obj/version.o $(COMPILER_LIBRARY) -o $@ -pthread $(WINDOWS_RUNTIME_LDFLAGS) $(LDFLAGS)
+
+$(JSON_TEST): tests/json_test.cpp src/lsp/json.cpp src/parser/unicode.cpp
+	@mkdir -p $(dir $@) $(BUILD_TMP)
+	$(TEMP_ENV) $(CXX) $(CXXFLAGS) $^ -o $@ $(WINDOWS_RUNTIME_LDFLAGS) $(LDFLAGS)
+
 $(CONSTANTS_TEST): tests/constants_test.cpp $(COMPILER_LIBRARY)
 	@mkdir -p $(dir $@) $(BUILD_TMP)
 	$(TEMP_ENV) $(CXX) $(CXXFLAGS) $< $(COMPILER_LIBRARY) -o $@ $(WINDOWS_RUNTIME_LDFLAGS) $(LDFLAGS)
@@ -218,7 +228,7 @@ obj/version.o: obj/version.cpp src/version.hpp
 	@mkdir -p $(dir $@) $(BUILD_TMP)
 	$(TEMP_ENV) $(CXX) $(CXXFLAGS) -c $< -o $@
 
-test: $(TARGET) $(LANGUAGE_SERVER) $(DEBUG_ADAPTER) $(SOURCE_DIAGNOSTICS_TEST) $(WORKSPACE_TEST) $(SEMANTIC_INDEX_TEST) $(LANGUAGE_QUERIES_TEST) $(LANGUAGE_EDITS_TEST) $(OPERATIONS_TEST) $(SOURCE_MAP_TEST) $(DAP_BREAKPOINT_TEST) $(DAP_FRAMING_TEST) $(GDB_PROCESS_TEST) $(PACKAGE_CATALOG_TEST) $(PACKAGE_RESOLUTION_TEST) $(PROCESS_TEST) $(NATIVE_OPERATIONS_TEST) $(NATIVE_BRIDGE_TEST) $(LSP_TEST) $(CONSTANTS_TEST)
+test: $(TARGET) $(LANGUAGE_SERVER) $(DEBUG_ADAPTER) $(SOURCE_DIAGNOSTICS_TEST) $(WORKSPACE_TEST) $(SEMANTIC_INDEX_TEST) $(LANGUAGE_QUERIES_TEST) $(LANGUAGE_EDITS_TEST) $(OPERATIONS_TEST) $(SOURCE_MAP_TEST) $(DAP_BREAKPOINT_TEST) $(DAP_FRAMING_TEST) $(GDB_PROCESS_TEST) $(PACKAGE_CATALOG_TEST) $(PACKAGE_RESOLUTION_TEST) $(PROCESS_TEST) $(NATIVE_OPERATIONS_TEST) $(NATIVE_BRIDGE_TEST) $(LSP_TEST) $(LSP_WORKER_TEST) $(JSON_TEST) $(CONSTANTS_TEST)
 	bash scripts/windows/check_runtime_imports.sh $(TARGET)
 	bash scripts/windows/check_runtime_imports.sh $(LANGUAGE_SERVER)
 	bash scripts/windows/check_runtime_imports.sh $(DEBUG_ADAPTER)
@@ -246,6 +256,8 @@ test: $(TARGET) $(LANGUAGE_SERVER) $(DEBUG_ADAPTER) $(SOURCE_DIAGNOSTICS_TEST) $
 	$(NATIVE_OPERATIONS_TEST)
 	$(NATIVE_BRIDGE_TEST)
 	$(LSP_TEST)
+	$(LSP_WORKER_TEST)
+	$(JSON_TEST)
 	SAGAN_LSP_BINARY="$(LANGUAGE_SERVER)" bash scripts/lsp_protocol_test.sh
 	SAGAN_LSP_BINARY="$(LANGUAGE_SERVER)" bash scripts/lsp_reliability_test.sh
 	$(CONSTANTS_TEST)
