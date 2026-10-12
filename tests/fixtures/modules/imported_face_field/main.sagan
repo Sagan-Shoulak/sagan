@@ -1,0 +1,13 @@
+module main
+
+import System from systems
+
+fun main(): Int {
+  let system = System()
+  system.degrade()
+  assert(system.status() == 99)
+  print("Imported face field passed")
+  return 0
+}
+
+exit(main())

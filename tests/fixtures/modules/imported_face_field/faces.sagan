@@ -1,0 +1,11 @@
+module faces
+
+face Degradable {
+  let .durability: Int
+
+  fun degrade(): Void {
+    self.durability--
+  }
+}
+
+export Degradable

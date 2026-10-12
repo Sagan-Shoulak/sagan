@@ -1718,12 +1718,14 @@ namespace codegen
 
       auto face_defaults(const std::string &name,
                          std::unordered_set<std::string> &visiting) const
-          -> std::vector<const parser::function_declaration *>
+          -> std::vector<std::pair<const parser::type_declaration *,
+                                   const parser::function_declaration *>>
       {
         if (!visiting.insert(name).second) return {};
         const auto found = face_types.find(name.substr(0, name.find('<')));
         if (found == face_types.end()) return {};
-        std::vector<const parser::function_declaration *> result;
+        std::vector<std::pair<const parser::type_declaration *,
+                              const parser::function_declaration *>> result;
         for (const auto &parent : found->second->composed_interfaces)
         {
           auto inherited = face_defaults(parent, visiting);
@@ -1734,11 +1736,12 @@ namespace codegen
           const auto *method_value = dynamic_cast<const parser::function_declaration *>(entry.get());
           if (!method_value) continue;
           const std::string signature_value = method_signature(*method_value);
-          std::erase_if(result, [&](const parser::function_declaration *existing)
+          std::erase_if(result, [&](const auto &existing)
           {
-            return method_signature(*existing) == signature_value;
+            return method_signature(*existing.second) == signature_value;
           });
-          if (method_value->body || method_value->expression_body) result.push_back(method_value);
+          if (method_value->body || method_value->expression_body)
+            result.emplace_back(found->second, method_value);
         }
         visiting.erase(name);
         return result;
@@ -1912,9 +1915,15 @@ namespace codegen
           const auto face = face_types.find(face_name.substr(0, face_name.find('<')));
           if (face != face_types.end() && !face->second->type_parameters.empty()) continue;
           std::unordered_set<std::string> visiting;
-          for (const auto *default_method : face_defaults(face_name, visiting))
+          for (const auto &[owner, default_method] : face_defaults(face_name, visiting))
           {
-            if (emitted_methods.insert(method_signature(*default_method)).second) method(*default_method);
+            if (emitted_methods.insert(method_signature(*default_method)).second)
+            {
+              const auto previous_source = active_source;
+              source_of(*owner);
+              method(*default_method);
+              active_source = previous_source;
+            }
           }
         }
         std::unordered_set<std::string> emitted_accessors;
