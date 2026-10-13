@@ -5,8 +5,19 @@ enum Signal {
   lost
 }
 
+class Inventory {
+  let amounts: Dictionary<Signal, Float<kilogram>>
+
+  new(amounts: Dictionary<Signal, Float<kilogram>>) {
+    self.amounts = amounts
+  }
+
+  fun nominal(): Float<kilogram> => self.amounts[Signal.nominal]
+}
+
 fun helper(): Int => 2
 fun offset(): Int => helper()
 
 export offset
 export Signal
+export Inventory
