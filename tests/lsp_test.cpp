@@ -635,7 +635,7 @@ auto main() -> int
   notify(service, "textDocument/didOpen",
          J::object{{"textDocument", J::object{{"uri", module_uri}, {"version", 1},
                                               {"text", std::string(module.value->text())}}}});
-  const auto imported_definition = request(service, "textDocument/definition", at(module_uri, 6, 18));
+  const auto imported_definition = request(service, "textDocument/definition", at(module_uri, 7, 18));
   require(imported_definition.elements() && imported_definition.elements()->size() == 1 &&
               imported_definition.elements()->front().get("uri") &&
               imported_definition.elements()->front().get("uri")->string()->find("guidance.sagan") !=
@@ -643,7 +643,7 @@ auto main() -> int
           "cross-module definition did not navigate to guidance");
   const auto links = request(service, "textDocument/documentLink",
                              J::object{{"textDocument", J::object{{"uri", module_uri}}}});
-  require(links.elements() && links.elements()->size() == 2,
+  require(links.elements() && links.elements()->size() == 3,
           "module imports did not become document links");
   const auto workspace_symbols = request(service, "workspace/symbol", J::object{{"query", "calculate"}});
   require(workspace_symbols.elements() && !workspace_symbols.elements()->empty(),
