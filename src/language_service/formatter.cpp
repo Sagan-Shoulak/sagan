@@ -160,7 +160,7 @@ namespace sagan::language_service
           left == tokens::KWD_IN || right == tokens::KWD_IN ||
           left == tokens::KWD_IS || right == tokens::KWD_IS ||
           left == tokens::KWD_HAS || right == tokens::KWD_HAS ||
-          left == tokens::KWD_NOT) return " ";
+          left == tokens::KWD_NOT || left == tokens::KWD_COPY) return " ";
       if (right == tokens::LBRACE &&
           (ends_expression(left) || left == tokens::KWD_ELSE ||
            left == tokens::KWD_FINALLY)) return " ";

@@ -1275,7 +1275,7 @@ namespace parser
       return std::make_unique<spread_expression>(span{operation.range.begin, value->range.end}, std::move(value));
     }
     if (match(tokens::PLUS_PLUS) || match(tokens::MINUS_MINUS) || match(tokens::BANG) ||
-        match(tokens::KWD_NOT) || match(tokens::PLUS) || match(tokens::MINUS))
+        match(tokens::KWD_NOT) || match(tokens::KWD_COPY) || match(tokens::PLUS) || match(tokens::MINUS))
     {
       const token operation = previous();
       auto operand = parse_unary();

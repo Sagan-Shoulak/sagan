@@ -16,6 +16,12 @@ converting it to a face value preserves the same underlying object, so mutation
 through one reference is visible through the others. Face calls dispatch to the
 concrete class implementation.
 
+`copy instance` explicitly allocates a distinct instance of the same concrete
+class and memberwise-copies its fields. Value fields and value containers are
+independent in the result; class-valued fields keep sharing their referenced
+objects. This operation is shallow by design. It applies only to class
+instances, while ordinary assignment continues to copy the owning reference.
+
 The generated C++ supplies this retain/release behavior. Sagan exposes
 non-owning references through class fields declared with `weak let`, but does
 not expose borrowing or explicit lifetime operations.

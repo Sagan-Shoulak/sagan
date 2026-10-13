@@ -96,7 +96,7 @@ let const weak fun test new class face enum dimension quantity unit affine
 if else match case for in while until break continue return yield
 import from as module export
 hope unless finally scream
-and or not self is has
+and or not copy self is has
 true false inf nan
 ```
 

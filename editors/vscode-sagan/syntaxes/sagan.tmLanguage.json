@@ -373,6 +373,7 @@
         { "name": "keyword.control.flow.sagan", "match": "\\b(?:return|yield)\\b" },
         { "name": "keyword.control.exception.sagan", "match": "\\b(?:hope|unless|finally|scream)\\b" },
         { "name": "keyword.operator.logical.sagan", "match": "\\b(?:and|or|not)\\b" },
+        { "name": "keyword.operator.copy.sagan", "match": "\\bcopy\\b" },
         { "name": "keyword.operator.type.sagan", "match": "\\b(?:is|has)\\b" },
         { "name": "variable.language.self.sagan", "match": "\\bself\\b" },
         { "name": "variable.language.super.sagan", "match": "\\bsuper\\b" },

@@ -677,6 +677,17 @@ namespace codegen
           return "(" + expression(*group->value) + ")";
         if (const auto *unary = dynamic_cast<const parser::unary_expression *>(&value))
         {
+          if (unary->operator_text == "copy")
+          {
+            std::string runtime_type = type_name(expression_type(value), value.range);
+            constexpr std::string_view shared_prefix = "std::shared_ptr<";
+            runtime_type = runtime_type.substr(shared_prefix.size(), runtime_type.size() - shared_prefix.size() - 1);
+            const auto *source = dynamic_cast<const parser::identifier_expression *>(unary->operand.get());
+            const std::string copied = source && source->name == "self"
+                                           ? expression(*unary->operand)
+                                           : "*" + expression(*unary->operand);
+            return "std::make_shared<" + runtime_type + ">(" + copied + ")";
+          }
           if (unary->operator_text == "++" || unary->operator_text == "--")
           {
             const std::string mutation = "sagan_" +

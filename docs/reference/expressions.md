@@ -20,6 +20,14 @@ chaining.
 `!` are logical operators; `? ... ; ...` is the conditional expression; and
 prefix/postfix increment return new/old values respectively.
 
+The prefix expression `copy value` creates a new instance of the same concrete
+class. It is a compiler-generated memberwise shallow copy: value fields and
+value containers receive independent storage, while fields that refer to class
+instances continue to share those referenced objects. The operand must be a
+class instance; scalars, collections, faces, and other non-class values are
+rejected. Assignment remains reference aliasing, so `let alias = object` and
+`let duplicate = copy object` intentionally have different behavior.
+
 `++` and `--` require an assignable numeric operand.
 The prefix form mutates before producing its value; the postfix form produces
 the old value and then mutates.

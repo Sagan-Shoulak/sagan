@@ -97,6 +97,7 @@ namespace tokens
     KWD_AND,
     KWD_OR,
     KWD_NOT,
+    KWD_COPY,
     KWD_SELF,
     KWD_SUPER,
     KWD_IS,
