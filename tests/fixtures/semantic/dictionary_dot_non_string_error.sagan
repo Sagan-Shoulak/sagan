@@ -1,0 +1,2 @@
+let numeric = {1: "one"}
+print(numeric.one)

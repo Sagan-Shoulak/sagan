@@ -9,6 +9,15 @@
 
 namespace parser
 {
+  namespace
+  {
+    auto is_word_token(const int token_id) -> bool
+    {
+      return token_id == tokens::IDENTIFIER || token_id == tokens::METHOD_IDENTIFIER ||
+             (token_id >= tokens::KWD_LET && token_id <= tokens::KWD_NAN);
+    }
+  }
+
   syntax_parser::syntax_parser(std::vector<token> tokens,
                                const sagan::diagnostics::cancellation_token stop)
       : input(std::move(tokens)), cancellation(stop) {}
@@ -1350,12 +1359,13 @@ namespace parser
       {
         const token access = previous();
         const bool safe = access.id == tokens::SAFE_DOT;
-        if (!match(tokens::IDENTIFIER) && !match(tokens::METHOD_IDENTIFIER))
+        if (at_end() || !is_word_token(peek()->id))
         {
           const span error_range = at_end() || check(tokens::NEWLINE) ? access.range : peek()->range;
           throw parse_error("Expected a member name after '" + std::string(safe ? "?." : ".") + "'",
                             error_range);
         }
+        advance();
         const token member = previous();
         std::string member_name = member.text;
         int member_end = member.range.end;
@@ -1601,7 +1611,19 @@ namespace parser
     skip_newlines();
     while (!check(tokens::RBRACE))
     {
-      auto key_or_spread = parse_nested_expression();
+      expression_ref key_or_spread;
+      if (!at_end() && is_word_token(peek()->id) &&
+          current + 1 < input.size() && input[current + 1].id == tokens::COLON)
+      {
+        const token &key = advance();
+        std::vector<string_part> parts;
+        parts.emplace_back(key.text);
+        key_or_spread = std::make_unique<string_expression>(key.range, std::move(parts), true, false);
+      }
+      else
+      {
+        key_or_spread = parse_nested_expression();
+      }
       if (dynamic_cast<spread_expression *>(key_or_spread.get()) != nullptr)
       {
         entries.emplace_back(std::move(key_or_spread));

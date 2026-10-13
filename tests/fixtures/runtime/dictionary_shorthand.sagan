@@ -1,0 +1,14 @@
+let computed_key = "computed"
+let values = {test: 123, (computed_key): 456}
+
+assert(values.test == 123)
+assert(values["test"] == values.test)
+assert(values.computed == 456)
+
+values.test = 321
+assert(values["test"] == 321)
+
+hope print(values.missing)
+unless RuntimeError.missing_key print("Caught missing shorthand key")
+
+print(values.test)

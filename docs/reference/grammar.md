@@ -1,6 +1,6 @@
 ---
 title: Grammar and syntax
-status: work-in-progress
+status: review-needed
 publication_ready: false
 verified_in: null
 verified_on: null
@@ -41,7 +41,8 @@ constant_identifier := ASCII_SCREAMING_SNAKE_CASE
 array       := "[" (expression ("," expression)* ","?)? "]"
 parallel_assignment_statement := identifier ("," identifier)+ "=" expression ("," expression)+
 dictionary  := "{" (dictionary_entry ("," dictionary_entry)* ","?)? "}"
-dictionary_entry := expression ":" expression | spread
+dictionary_entry := word_key ":" expression | expression ":" expression | spread
+word_key    := identifier | keyword
 vector      := "<" expression "," expression ("," expression)* ","? ">"
 point       := "(" expression "," expression ("," expression)* ","? ")"
 spherical_vector := "s<" expression "," expression "," expression ","? ">"
@@ -125,6 +126,11 @@ is likewise positional. A `<` where a primary expression must begin opens a
 vector; after a left operand it is a comparison. At a vector element's top
 level, `>` closes the vector, so a greater-than comparison there must be
 parenthesized.
+
+A bare `word_key` immediately followed by `:` in a dictionary literal is a
+static `String` key, including when that word is otherwise reserved. Parentheses
+select the general expression form when an identifier's value should supply the
+key, as in `{(key): value}`.
 
 Blocks may be empty. Statements inside them are newline-separated; semicolons do
 not terminate ordinary statements. `else`, `unless`, and `finally` may follow
