@@ -3084,6 +3084,17 @@ namespace semantic
           const std::string iterable = expression(*loop->iterable);
           std::string binding_type = array_element(iterable).value_or(std::string(unknown_type));
           if (const auto shaped = dimensioned(iterable)) binding_type = shaped->component;
+          if (const auto *name = dynamic_cast<const parser::identifier_expression *>(loop->iterable.get());
+              name && enums.contains(name->name))
+          {
+            const bool has_payload = std::any_of(enum_cases.begin(), enum_cases.end(), [&](const auto &entry)
+            {
+              return entry.second.enum_name == name->name && !entry.second.payload_types.empty();
+            });
+            require(!has_payload, "Payload enum type '" + name->name + "' is not directly iterable",
+                    loop->iterable->range);
+            binding_type = name->name;
+          }
           const scope_state before = scopes;
           open_scope();
           add_binding(loop->binding, binding{binding_type, {}});

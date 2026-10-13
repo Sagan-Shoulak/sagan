@@ -29,6 +29,12 @@ Empty blocks are valid. `break` and `continue` outside a loop are syntax errors.
 A block brace is recognized from its statement position, while `{...}` in an
 expression remains a dictionary literal.
 
+`for` accepts arrays, dimensioned values, and payload-free enum types. Iterating
+an enum type visits its members once in declaration order and binds each member
+as the enum's nominal type; explicit numeric tags do not reorder the members.
+Payload enums are not directly iterable because their cases require payload
+construction data.
+
 Exception statements use `hope` for the protected block, expression-shaped
 `unless` handler patterns, optional final `finally` cleanup, and `scream
 expression` to raise a value. A `hope` requires at least one handler or cleanup

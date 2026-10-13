@@ -1357,8 +1357,22 @@ namespace codegen
         }
         else if (const auto *loop = dynamic_cast<const parser::for_statement *>(&value))
         {
-          output << "for (auto " << identifier(loop->binding) << "_value : " << expression(*loop->iterable)
-                 << ") {\n";
+          output << "for (auto " << identifier(loop->binding) << "_value : ";
+          if (const auto *name = dynamic_cast<const parser::identifier_expression *>(loop->iterable.get());
+              name && enum_declarations.contains(name->name) && !payload_enums.contains(name->name))
+          {
+            const auto &declaration = *enum_declarations.at(name->name);
+            output << "std::array<" << identifier(name->name) << ", " << declaration.enum_members.size()
+                   << ">{";
+            for (std::size_t index = 0; index < declaration.enum_members.size(); ++index)
+            {
+              if (index != 0) output << ", ";
+              output << identifier(name->name) << "::" << identifier(declaration.enum_members[index].name);
+            }
+            output << "}";
+          }
+          else output << expression(*loop->iterable);
+          output << ") {\n";
           ++depth;
           open_boxed_scope();
           box(loop->binding);

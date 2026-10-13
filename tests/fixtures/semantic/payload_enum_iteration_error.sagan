@@ -1,0 +1,6 @@
+enum Resource {
+  Massive(Int)
+  Counted
+}
+
+for resource in Resource print(resource)
