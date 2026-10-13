@@ -98,3 +98,10 @@ if bin/sagan --types tests/fixtures/semantic/operator_ambiguity_error.sagan; the
 fi
 
 echo "Ambiguous operator overload failed as expected."
+
+if bin/sagan --types tests/fixtures/semantic/payload_enum_iteration_error.sagan; then
+  echo "Expected payload enum iteration to fail." >&2
+  exit 1
+fi
+
+echo "Payload enum iteration failed as expected."

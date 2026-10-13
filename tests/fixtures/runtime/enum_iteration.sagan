@@ -1,0 +1,25 @@
+enum MassiveResource {
+  iron = 40
+  aluminum = 10
+  titanium
+}
+
+fun main(): Int {
+  let visited = 0
+  let first = MassiveResource.iron
+  let last = MassiveResource.iron
+  for resource in MassiveResource {
+    if visited == 0 {
+      first = resource
+    }
+    last = resource
+    visited += 1
+  }
+  if visited == 3 and first == MassiveResource.iron and last == MassiveResource.titanium {
+    print("enum iteration passed")
+    return 0
+  }
+  return 1
+}
+
+exit(main())
