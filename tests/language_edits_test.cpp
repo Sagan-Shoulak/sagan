@@ -91,6 +91,22 @@ auto main() -> int
   require(language_service::format_document(dictionary_shorthand_again)
               .edits.documents.front().edits.empty(),
           "dictionary shorthand formatting was not idempotent");
+  const source::document_snapshot dictionary_membership(
+      {{source::document_id{134}, source::document_uri{"untitled:dictionary-membership"}, {}}, 1,
+       "let present=\"test\"in values\n"});
+  const auto dictionary_membership_edits = language_service::format_document(dictionary_membership);
+  const auto dictionary_membership_preview = language_service::preview_edits(
+      dictionary_membership_edits.edits, {&dictionary_membership});
+  require(dictionary_membership_edits.state == language_service::edit_state::ready &&
+              dictionary_membership_preview.state == language_service::edit_state::ready &&
+              dictionary_membership_preview.documents.front().text ==
+                  "let present = \"test\" in values\n",
+          "formatter did not apply canonical dictionary membership spacing");
+  const source::document_snapshot dictionary_membership_again(
+      dictionary_membership.identity(), 2, dictionary_membership_preview.documents.front().text);
+  require(language_service::format_document(dictionary_membership_again)
+              .edits.documents.front().edits.empty(),
+          "dictionary membership formatting was not idempotent");
   const source::document_snapshot private_members(
       {{source::document_id{132}, source::document_uri{"untitled:private-members"}, {}}, 1,
        "class Counter {\nlet .value:Int=0\nconst .LIMIT:Int=42\nfun .read():Int=>self.value\n}\n"});

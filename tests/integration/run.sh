@@ -17,6 +17,7 @@ tests=(
   codegen_test.sh
   runtime_test.sh
   dictionary_shorthand_test.sh
+  dictionary_membership_test.sh
   optional_test.sh
   payload_enum_test.sh
   generic_sum_test.sh

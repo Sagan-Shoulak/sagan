@@ -1215,7 +1215,7 @@ namespace parser
     const bool has_comparison = match(tokens::LANGLE) || match(tokens::LESS_EQUAL) ||
                                 (vector_literal_depth == 0 && match(tokens::RANGLE)) ||
                                 match(tokens::GREATER_EQUAL) || match(tokens::KWD_IS) ||
-                                match(tokens::KWD_HAS);
+                                match(tokens::KWD_HAS) || match(tokens::KWD_IN);
     if (!has_comparison)
     {
       return left;
@@ -1224,7 +1224,8 @@ namespace parser
     auto right = parse_additive();
     if (check(tokens::LANGLE) || check(tokens::LESS_EQUAL) ||
         (vector_literal_depth == 0 && check(tokens::RANGLE)) ||
-        check(tokens::GREATER_EQUAL) || check(tokens::KWD_IS) || check(tokens::KWD_HAS))
+        check(tokens::GREATER_EQUAL) || check(tokens::KWD_IS) || check(tokens::KWD_HAS) ||
+        check(tokens::KWD_IN))
     {
       throw parse_error("Chained comparisons are not allowed; combine comparisons with 'and'", peek()->range);
     }

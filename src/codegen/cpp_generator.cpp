@@ -708,6 +708,13 @@ namespace codegen
         }
         if (const auto *binary = dynamic_cast<const parser::binary_expression *>(&value))
         {
+          if (binary->operator_text == "in")
+          {
+            const std::string key_type =
+                dictionary_components(expression_type(*binary->right), binary->right->range).first;
+            return "(" + expression(*binary->right) + ".contains(" +
+                   converted_expression(*binary->left, key_type) + "))";
+          }
           if (binary->operator_text == "is" || binary->operator_text == "has")
           {
             const auto &source = static_cast<const parser::identifier_expression &>(*binary->left);
