@@ -1818,6 +1818,53 @@ namespace semantic
           for (const auto &argument : call->arguments) arguments.push_back(expression(*argument));
           if (const auto *member = dynamic_cast<const parser::member_expression *>(call->callee.get()))
           {
+            if (member->member_name == "any" || member->member_name == "all")
+            {
+              std::optional<std::string> element;
+              std::string receiver_type;
+              if (const auto *target = dynamic_cast<const parser::identifier_expression *>(member->target.get());
+                  target && enums.contains(target->name))
+              {
+                const bool has_payload = std::any_of(enum_cases.begin(), enum_cases.end(), [&](const auto &entry)
+                {
+                  return entry.second.enum_name == target->name && !entry.second.payload_types.empty();
+                });
+                require(!has_payload, "Payload enum type '" + target->name +
+                        "' does not support direct ." + member->member_name + " predicates", member->range);
+                element = target->name;
+                receiver_type = target->name;
+                static_cast<void>(record(*member->target, "Type"));
+              }
+              else
+              {
+                receiver_type = expression(*member->target);
+                element = array_element(receiver_type);
+              }
+              require(element.has_value(), "Predicate method ." + member->member_name +
+                      " requires an Array or payload-free enum type, but received " + receiver_type,
+                      member->range);
+              require(!member->safe, "Safe access is not defined for predicate methods", member->range);
+              require(arguments.size() == 1, "." + member->member_name +
+                      " expects exactly one predicate argument, but received " +
+                      std::to_string(arguments.size()), value.range);
+              const auto predicate = function_signature_type(arguments.front());
+              require(predicate.has_value(), "." + member->member_name +
+                      " requires a predicate function, but received " + arguments.front(),
+                      call->arguments.front()->range);
+              require(predicate->parameters.size() == 1, "." + member->member_name +
+                      " predicate must accept exactly one argument, but accepts " +
+                      std::to_string(predicate->parameters.size()), call->arguments.front()->range);
+              require_compatible(predicate->parameters.front(), *element,
+                                 call->arguments.front()->range, "." + member->member_name +
+                                 " predicate parameter");
+              require_compatible("Bool", predicate->result, call->arguments.front()->range,
+                                 "." + member->member_name + " predicate result");
+              static_cast<void>(record(*call->callee, "Function"));
+              model.members.push_back(resolved_member{member->range, receiver_type, member->member_name});
+              model.calls.push_back(resolved_call{value.range, call->callee->range.end,
+                                                  {arguments.front()}, "Bool"});
+              return record(value, "Bool");
+            }
             if (member->member_name == "length" || member->member_name == "squared_length" ||
                 member->member_name == "normalized" || member->member_name == "normalized!")
             {

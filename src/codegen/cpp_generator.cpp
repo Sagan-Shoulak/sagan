@@ -802,6 +802,38 @@ namespace codegen
         }
         if (const auto *call = dynamic_cast<const parser::call_expression *>(&value))
         {
+          if (const auto *predicate_method = dynamic_cast<const parser::member_expression *>(call->callee.get());
+              predicate_method && (predicate_method->member_name == "any" ||
+                                   predicate_method->member_name == "all"))
+          {
+            const bool any = predicate_method->member_name == "any";
+            const std::string collection = "sagan_predicate_collection_" +
+                                           std::to_string(temporary_index++);
+            const std::string predicate = "sagan_predicate_" + std::to_string(temporary_index++);
+            const std::string element = "sagan_predicate_element_" + std::to_string(temporary_index++);
+            std::string receiver;
+            if (const auto *name = dynamic_cast<const parser::identifier_expression *>(
+                    predicate_method->target.get());
+                name && enum_declarations.contains(name->name) && !payload_enums.contains(name->name))
+            {
+              const auto &declaration = *enum_declarations.at(name->name);
+              receiver = "std::array<" + identifier(name->name) + ", " +
+                         std::to_string(declaration.enum_members.size()) + ">{";
+              for (std::size_t index = 0; index < declaration.enum_members.size(); ++index)
+              {
+                if (index != 0) receiver += ", ";
+                receiver += identifier(name->name) + "::" +
+                            identifier(declaration.enum_members[index].name);
+              }
+              receiver += "}";
+            }
+            else receiver = expression(*predicate_method->target);
+            return "([&]() { const auto &" + collection + " = " + receiver + "; auto " + predicate +
+                   " = " + expression(*call->arguments.front()) + "; for (const auto &" + element + " : " +
+                   collection + ") { if (" + std::string(any ? "" : "!") + predicate + "(" + element +
+                   ")) return " + std::string(any ? "true" : "false") + "; } return " +
+                   std::string(any ? "false" : "true") + "; }())";
+          }
           if (const auto *method = dynamic_cast<const parser::member_expression *>(call->callee.get()))
             if (const auto *parent = dynamic_cast<const parser::member_expression *>(method->target.get()))
               if (const auto *super = dynamic_cast<const parser::identifier_expression *>(parent->target.get());

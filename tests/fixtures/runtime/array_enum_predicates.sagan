@@ -1,0 +1,52 @@
+enum MassiveResource {
+  iron
+  aluminum
+  titanium
+}
+
+class PredicateProbe {
+  let calls: Int = 0
+
+  fun is_two(value: Int): Bool {
+    self.calls += 1
+    return value == 2
+  }
+
+  fun is_even(value: Int): Bool {
+    self.calls += 1
+    return value % 2 == 0
+  }
+}
+
+fun main(): Int {
+  let any_probe = PredicateProbe()
+  let any_result = [1, 2, 3, 4].any(fun(value: Int): Bool => any_probe.is_two(value))
+  assert(any_result)
+  assert(any_probe.calls == 2)
+
+  let all_probe = PredicateProbe()
+  let all_result = [2, 4, 5, 6].all(fun(value: Int): Bool => all_probe.is_even(value))
+  assert(!all_result)
+  assert(all_probe.calls == 3)
+
+  assert(0.times.any(fun(value: Int): Bool => value > 0) == false)
+  assert(0.times.all(fun(value: Int): Bool => value > 0) == true)
+
+  let available = {
+    (MassiveResource.iron): 12,
+    (MassiveResource.aluminum): 8,
+    (MassiveResource.titanium): 3
+  }
+  let required = {
+    (MassiveResource.iron): 10,
+    (MassiveResource.aluminum): 8,
+    (MassiveResource.titanium): 2
+  }
+  assert(MassiveResource.all(fun(resource: MassiveResource): Bool =>
+    available[resource] >= required[resource]))
+  assert(MassiveResource.any(fun(resource: MassiveResource): Bool =>
+    available[resource] == required[resource]))
+  return 0
+}
+
+exit(main())
