@@ -204,6 +204,15 @@ the zero-based indices below that integer: `5.times` is `[0, 1, 2, 3, 4]`,
 and `0.times` is `[]`. A negative count raises `RuntimeError.invalid_range`.
 The count is evaluated once; this is an actual array, not a lazy sequence.
 
+Arrays support `any(predicate)` and `all(predicate)`, where the predicate
+accepts one array element and returns `Bool`. Evaluation visits elements from
+left to right and stops as soon as the result is known. Consequently,
+`empty.any(predicate)` is `false` and `empty.all(predicate)` is `true`.
+Payload-free enum types expose the same operations over their declaration-order
+cases, so `MassiveResource.all(fun(resource: MassiveResource): Bool =>
+available[resource] >= required[resource])` checks every resource directly.
+Enums with payload cases are not direct sequences.
+
 Cartesian vectors and points require at least two elements, so `<>`, `<1>`, and `(1,)`
 are syntax errors. `(value)` remains a grouped expression. Spherical vectors
 and points require exactly three components in the order shown. The `s` must be

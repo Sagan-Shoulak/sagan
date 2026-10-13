@@ -57,12 +57,15 @@ namespace sagan::language_service
         auto builtin = semantic::integer_builtin_member(type->display, record.member);
         if (!builtin) builtin = semantic::integer_builtin_static_method(type->display, record.member);
         if (!builtin) builtin = semantic::vector_builtin_method(type->display, record.member);
+        if (!builtin) builtin = semantic::array_predicate_builtin_method(type->display, record.member, true);
         if (!builtin) continue;
         if (const auto selection = name_range(document, tokens, record.use, builtin->name, true);
             selection && contains(selection->bytes, offset))
           return builtin_member_use{*selection, *builtin,
               {type->display.starts_with("Vector")
                    ? "sagan-core-member:Vector." + std::string(builtin->name)
+                   : builtin->name == "any" || builtin->name == "all"
+                   ? "sagan-core-member:Sequence." + std::string(builtin->name)
                    : builtin->callable ? "sagan-core-member:Int.round"
                                               : "sagan-core-member:Int.times"}};
       }
@@ -587,6 +590,17 @@ namespace sagan::language_service
                                            std::string(builtin->name), std::string(builtin->name), false, {}});
         if (!receiver_type.empty() &&
             (!receiver.value || receiver.value->kind != semantic::symbol_kind::builtin_type))
+        {
+          for (const std::string_view name : {"any", "all"})
+            if (const auto builtin = semantic::array_predicate_builtin_method(receiver_type, name);
+                builtin && builtin->name.starts_with(prefix))
+              values.push_back(completion_item{std::string(builtin->name),
+                                               {"sagan-core-member:Sequence." + std::string(builtin->name)},
+                                               semantic::symbol_kind::method, replacement,
+                                               std::string(builtin->name) + "(",
+                                               "((Element) => Bool) => Bool",
+                                               {std::string(builtin->documentation)}, "sagan/core",
+                                               std::string(builtin->name), std::string(builtin->name), false, {}});
           for (const std::string_view name : {"length", "squared_length", "normalized", "normalized!"})
             if (const auto builtin = semantic::vector_builtin_method(receiver_type, name);
                 builtin && builtin->name.starts_with(prefix))
@@ -603,6 +617,7 @@ namespace sagan::language_service
                                                {std::string(builtin->documentation)}, "sagan/core",
                                                std::string(builtin->name), std::string(builtin->name), false, {}});
             }
+        }
         const auto inside_owner = [&]()
         {
           for (const auto &symbol : index_.symbols())

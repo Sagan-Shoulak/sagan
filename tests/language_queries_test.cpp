@@ -166,6 +166,7 @@ auto main() -> int
       "  let rounded = Int.round(raised)\n"
       "  let direction = <3.0, 4.0>\n"
       "  let heading = direction.normalized()\n"
+      "  let has_index = indices.any(fun(value: Int): Bool => value == 2)\n"
       "  a, b = b, a + b\n"
       "  return indices[0] + a + b + rounded\n"
       "}\n";
@@ -189,6 +190,17 @@ auto main() -> int
               times_hover.value->symbol.origin == semantic::symbol_origin::builtin &&
               !times_hover.value->documentation.empty(),
           "integer times hover did not expose compiler-owned documentation");
+  const auto any_completion = sugar_query.completions(
+      at(sugar_source, "indices.any") + std::string("indices.a").size());
+  require(any_completion.value &&
+              std::any_of(any_completion.value->begin(), any_completion.value->end(),
+                          [](const auto &entry)
+                          { return entry.label == "any" && !entry.documentation.empty(); }),
+          "Array predicate completion omitted any metadata");
+  const auto any_hover = sugar_query.hover(at(sugar_source, "indices.any") + 9);
+  require(any_hover.value && any_hover.value->type == "Bool" &&
+              any_hover.value->symbol.origin == semantic::symbol_origin::builtin,
+          "Array predicate hover omitted compiler-owned metadata");
   const auto sugar_classifications = sugar_query.semantic_classifications();
   require(sugar_classifications.value &&
               std::any_of(sugar_classifications.value->begin(), sugar_classifications.value->end(),

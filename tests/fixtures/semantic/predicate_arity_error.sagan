@@ -1,0 +1,2 @@
+let values = [1, 2, 3]
+print(values.any(fun(left: Int, right: Int): Bool => left == right))

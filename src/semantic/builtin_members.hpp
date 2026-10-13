@@ -56,4 +56,21 @@ namespace semantic
                             "Normalizes a mutable unitless Vector in place and returns it.", true};
     return {};
   }
+
+  inline auto array_predicate_builtin_method(const std::string_view receiver_type,
+                                             const std::string_view member_name,
+                                             const bool resolved_enum = false)
+    -> std::optional<builtin_member>
+  {
+    if (!receiver_type.starts_with("Array<") && !resolved_enum) return {};
+    if (member_name == "any")
+      return builtin_member{"any", "Bool",
+                            "Visits values from left to right until the predicate returns true. "
+                            "Returns false for an empty sequence.", true};
+    if (member_name == "all")
+      return builtin_member{"all", "Bool",
+                            "Visits values from left to right until the predicate returns false. "
+                            "Returns true for an empty sequence.", true};
+    return {};
+  }
 }
