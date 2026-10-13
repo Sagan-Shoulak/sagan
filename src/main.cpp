@@ -552,14 +552,14 @@ namespace
     passed &= expect_ids(
         "complete keyword vocabulary",
         "let weak fun test new class face enum dimension quantity unit affine if else match case for in while until break continue return yield "
-        "import from as module export hope unless finally scream and or not self is has true false inf nan\n",
+        "import from as module export hope unless finally scream and or not copy self is has true false inf nan\n",
         {tokens::KWD_LET, tokens::KWD_WEAK, tokens::KWD_FUN, tokens::KWD_TEST, tokens::KWD_NEW, tokens::KWD_CLASS, tokens::KWD_FACE, tokens::KWD_ENUM,
          tokens::KWD_DIMENSION, tokens::KWD_QUANTITY, tokens::KWD_UNIT, tokens::KWD_AFFINE,
          tokens::KWD_IF, tokens::KWD_ELSE, tokens::KWD_MATCH, tokens::KWD_CASE, tokens::KWD_FOR,
          tokens::KWD_IN, tokens::KWD_WHILE, tokens::KWD_UNTIL, tokens::KWD_BREAK, tokens::KWD_CONTINUE,
          tokens::KWD_RETURN, tokens::KWD_YIELD, tokens::KWD_IMPORT, tokens::KWD_FROM, tokens::KWD_AS,
          tokens::KWD_MODULE, tokens::KWD_EXPORT, tokens::KWD_HOPE, tokens::KWD_UNLESS,
-         tokens::KWD_FINALLY, tokens::KWD_SCREAM, tokens::KWD_AND, tokens::KWD_OR, tokens::KWD_NOT,
+         tokens::KWD_FINALLY, tokens::KWD_SCREAM, tokens::KWD_AND, tokens::KWD_OR, tokens::KWD_NOT, tokens::KWD_COPY,
          tokens::KWD_SELF, tokens::KWD_IS, tokens::KWD_HAS, tokens::KWD_TRUE, tokens::KWD_FALSE,
          tokens::KWD_INF, tokens::KWD_NAN, tokens::NEWLINE});
 
@@ -1582,7 +1582,7 @@ namespace
         "  if input > 0 {\n    total\n  } else {\n    total\n  }\n"
         "  while input > 0 {\n    break\n  }\n"
         "  until input > 0 {\n    continue\n  }\n"
-        "  for item in values {\n    let copy = item\n    yield copy\n  }\n"
+        "  for item in values {\n    let duplicated = item\n    yield duplicated\n  }\n"
         "  match input {\n    case 0 { total\n    }\n    case else { total\n    }\n  }\n"
         "  hope {\n    total\n  } unless 0 {\n    scream total\n  } finally {\n    total\n  }\n"
         "  return mapper(total)\n"

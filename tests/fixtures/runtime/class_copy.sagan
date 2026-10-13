@@ -1,0 +1,65 @@
+class Marker {
+  let value: Int
+
+  new(value: Int) {
+    self.value = value
+  }
+
+  fun set!(value: Int): Void {
+    self.value = value
+  }
+
+  fun current(): Int => self.value
+}
+
+class ResourceBundle {
+  let mass: Int
+  let readings: Array<Int8>
+  let marker: Marker
+
+  new(mass: Int, readings: Array<Int8>, marker: Marker) {
+    self.mass = mass
+    self.readings = readings
+    self.marker = marker
+  }
+
+  fun +(other: ResourceBundle): ResourceBundle {
+    let result = copy self
+    result.mass += other.mass
+    result.readings[0] += other.readings[0]
+    return result
+  }
+
+  fun set_mass!(mass: Int): Void {
+    self.mass = mass
+  }
+
+  fun mass_value(): Int => self.mass
+  fun first_reading(): Int => self.readings[0]
+  fun marker_value(): Int => self.marker.current()
+  fun set_marker!(value: Int): Void => self.marker.set!(value)
+}
+
+fun main(): Int {
+  let original_readings = [2]
+  let other_readings = [5]
+  let original = ResourceBundle(10, original_readings, Marker(4))
+  let alias = original
+  alias.set_mass!(11)
+
+  let result = original + ResourceBundle(3, other_readings, Marker(9))
+  if original.mass_value() != 11 or original.first_reading() != 2 {
+    return 1
+  }
+  if result.mass_value() != 14 or result.first_reading() != 7 {
+    return 2
+  }
+
+  result.set_marker!(8)
+  if original.marker_value() != 8 {
+    return 3
+  }
+  return 0
+}
+
+exit(main())

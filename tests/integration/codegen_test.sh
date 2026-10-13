@@ -102,6 +102,7 @@ expect_runtime_success tests/fixtures/runtime/weak_assignment.sagan
 expect_runtime_success tests/fixtures/runtime/face_default_diamond.sagan
 expect_runtime_success tests/fixtures/runtime/warning_clean_equality.sagan
 expect_runtime_success tests/fixtures/runtime/operator_methods.sagan
+expect_runtime_success tests/fixtures/runtime/class_copy.sagan
 expect_runtime_success tests/fixtures/runtime/enum_iteration.sagan
 
 expect_runtime_error tests/fixtures/runtime/execution_exponent_zero_error.sagan \

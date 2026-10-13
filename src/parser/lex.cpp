@@ -50,6 +50,7 @@ namespace
       {"and", tokens::KWD_AND},
       {"or", tokens::KWD_OR},
       {"not", tokens::KWD_NOT},
+      {"copy", tokens::KWD_COPY},
       {"self", tokens::KWD_SELF},
       {"super", tokens::KWD_SUPER},
       {"is", tokens::KWD_IS},
@@ -120,6 +121,7 @@ namespace
       case tokens::KWD_AND:
       case tokens::KWD_OR:
       case tokens::KWD_NOT:
+      case tokens::KWD_COPY:
         state.newline_continuation = true;
         break;
       default:

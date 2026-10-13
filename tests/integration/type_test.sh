@@ -92,6 +92,14 @@ fi
 
 echo "Invalid compound operator return failed as expected."
 
+copy_error="$(bin/sagan --types tests/fixtures/semantic/copy_non_class_error.sagan 2>&1 || true)"
+if [[ "$copy_error" == *"Operator 'copy' requires a class instance, but received Int64"* ]]; then
+  echo "Non-class copy operand failed with the expected diagnostic."
+else
+  echo "Expected a focused non-class copy diagnostic." >&2
+  exit 1
+fi
+
 if bin/sagan --types tests/fixtures/semantic/operator_ambiguity_error.sagan; then
   echo "Expected ambiguous operator overloads to fail." >&2
   exit 1

@@ -181,6 +181,20 @@ class Probe has Named {
 let voyager = Probe("Voyager")
 ```
 
+Assigning a class instance creates another reference to the same object. Use
+`copy` when a distinct object is required:
+
+```sagan
+let alias = voyager
+let duplicate = copy voyager
+```
+
+`alias` observes mutations made through `voyager`. `duplicate` is a
+compiler-generated memberwise shallow copy: its value fields and containers are
+independent, while any class-valued fields still refer to the same nested
+objects. `copy self` is valid inside a method, including an operator method
+that copies its receiver before changing the result.
+
 Every field without a declaration initializer must be assigned on every path
 through every constructor. Constructors cannot return a value. A class with no
 required initialization may be called with `ClassName()`.

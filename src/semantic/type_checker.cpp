@@ -56,7 +56,7 @@ namespace semantic
       if (const auto *group = dynamic_cast<const parser::grouping_expression *>(&value))
         return constant_default(*group->value);
       if (const auto *unary = dynamic_cast<const parser::unary_expression *>(&value))
-        return !unary->postfix && constant_default(*unary->operand);
+        return !unary->postfix && unary->operator_text != "copy" && constant_default(*unary->operand);
       if (const auto *binary = dynamic_cast<const parser::binary_expression *>(&value))
         return constant_default(*binary->left) && constant_default(*binary->right);
       if (const auto *conditional = dynamic_cast<const parser::conditional_expression *>(&value))
@@ -1697,6 +1697,13 @@ namespace semantic
             }
           }
           const std::string operand = expression(*unary->operand);
+          if (unary->operator_text == "copy")
+          {
+            const auto instance = generic_instance(operand);
+            require(objects.contains(instance.base),
+                    "Operator 'copy' requires a class instance, but received " + operand, value.range);
+            return record(value, operand);
+          }
           if (unary->operator_text == "++" || unary->operator_text == "--")
           {
             static_cast<void>(assignment_target(*unary->operand));
