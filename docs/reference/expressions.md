@@ -181,6 +181,12 @@ when its evaluated value should be the key, as in `{(active_key): true}`.
 Dictionary keys otherwise accept any expression; semantic analysis determines
 whether a key's type is hashable.
 
+Use `key in dictionary` to test for a key without reading its value or raising
+`RuntimeError.missing_key`. The expression returns `Bool`, requires the key to
+match the dictionary's key type, and evaluates at comparison precedence. For
+example, `"name" in metadata` is `true` for the dictionary above, while
+`"missing" in metadata` is `false`.
+
 String-keyed dictionaries support equivalent bracket and dot reads:
 `metadata.name` means `metadata["name"]`. Dot access uses the same checked
 lookup, assignment, and `RuntimeError.missing_key` behavior as brackets.
@@ -250,7 +256,7 @@ From highest to lowest:
 3. prefix `++`, `--`, `!`, `not`, `...`, unary `+`, and unary `-`;
 4. `*`, `/`, `%`;
 5. `+`, `-`;
-6. `<`, `<=`, `>`, `>=`, `is`, `has`;
+6. `<`, `<=`, `>`, `>=`, `in`, `is`, `has`;
 7. `==`, `!=`;
 8. `and`;
 9. `or`;

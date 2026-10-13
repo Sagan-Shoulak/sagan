@@ -69,6 +69,7 @@ scream_statement := "scream" expression
 assignment_statement := expression ("=" | "+=" | "-=" | "*=" | "/=" | "%=" | "^=") expression
 expression_statement := expression
 coalesce_expression := logical_or_expression ("??" coalesce_expression)?
+comparison_operator := "<" | "<=" | ">" | ">=" | "in" | "is" | "has"
 function_declaration := "fun" identifier generic_parameters? "(" parameters? ")" (":" type)? function_body
 parameters := parameter ("," parameter)*
 parameter := identifier (":" type)? ("=" expression)?

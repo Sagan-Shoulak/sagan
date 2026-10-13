@@ -715,6 +715,16 @@ namespace
         "        Integer(1)\n");
     passed &= expect_syntax_error("chained comparison", "let invalid = a < b < c\n");
     passed &= expect_ast(
+        "dictionary membership comparison",
+        "let present = key in values\n",
+        "Program\n"
+        "  Let(present)\n"
+        "    Binary(in)\n"
+        "      Identifier(key)\n"
+        "      Identifier(values)\n");
+    passed &= expect_syntax_error("chained dictionary membership",
+                                  "let invalid = key in values in collections\n");
+    passed &= expect_ast(
         "or equality and special floating values",
         "let compared = (left == right) or (value != nan) or inf\n",
         "Program\n"
@@ -1831,6 +1841,18 @@ namespace
                                 "enum State {\n  waiting\n  ready\n}\n"
                                 "let invalid = State.waiting < State.ready\n",
                                 "Ordered comparison is not defined for enum values");
+    passed &= expect_type_model(
+        "dictionary key membership",
+        "let values = {name: 1}\nlet present = \"name\" in values\n",
+        {"present: Bool"});
+    passed &= expect_type_error(
+        "dictionary membership key mismatch",
+        "let values = {name: 1}\nlet invalid = 1 in values\n",
+        "Dictionary membership key requires String, but received Int8");
+    passed &= expect_type_error(
+        "dictionary membership requires dictionary",
+        "let values = [1, 2]\nlet invalid = 1 in values\n",
+        "Right operand of 'in' must be a dictionary, but received Array<Int8>");
     passed &= expect_type_error("initializer type mismatch", "let value: Bool = 1\n",
                                 "Variable initializer requires Bool, but received Int");
     passed &= expect_type_error("uninferable variable", "let pending\n",

@@ -1,0 +1,13 @@
+let values = {test: 123}
+let dynamic_key = "test"
+let missing_key = "missing"
+let numeric = {1: "one"}
+
+assert("test" in values)
+assert(dynamic_key in values)
+assert(!(missing_key in values))
+assert(1 in numeric)
+assert(!(2 in numeric))
+assert(("test" in values) == true)
+
+print("present: ${dynamic_key in values}; missing: ${missing_key in values}")

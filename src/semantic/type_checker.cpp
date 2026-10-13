@@ -1688,6 +1688,14 @@ namespace semantic
         {
           const std::string left = expression(*binary->left);
           const std::string right = expression(*binary->right);
+          if (binary->operator_text == "in")
+          {
+            const auto types = dictionary_types(right);
+            require(types.has_value(), "Right operand of 'in' must be a dictionary, but received " + right,
+                    binary->right->range);
+            require_compatible(types->first, left, binary->left->range, "Dictionary membership key");
+            return record(value, "Bool");
+          }
           if (binary->operator_text == "is" || binary->operator_text == "has")
           {
             const auto *source = dynamic_cast<const parser::identifier_expression *>(binary->left.get());
