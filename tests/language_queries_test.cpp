@@ -529,7 +529,7 @@ auto main() -> int
               language_service::search_workspace_symbols(workspace_index, "calculate", 0).empty(),
           "workspace symbol search did not return deterministic source declarations");
   const auto links = workspace_query.import_links();
-  require(links.value && links.value->size() == 2 &&
+  require(links.value && links.value->size() == 3 &&
               links.value->front().target.value.find("guidance.sagan") != std::string::npos,
           "resolved imports did not produce document links");
   const auto builtin_docs = workspace_query.documentation_at(at(std::string(source.value->text()), "print"));

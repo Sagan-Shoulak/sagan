@@ -528,7 +528,28 @@ namespace modules
       auto annotation(std::optional<std::string> &name) const -> void
       {
         if (!name) return;
-        if (const auto found = bindings.find(*name); found != bindings.end()) *name = found->second;
+        std::string rewritten;
+        rewritten.reserve(name->size());
+        for (std::size_t index = 0; index < name->size();)
+        {
+          const auto current = static_cast<unsigned char>((*name)[index]);
+          if (!std::isalpha(current) && (*name)[index] != '_')
+          {
+            rewritten.push_back((*name)[index++]);
+            continue;
+          }
+          const std::size_t begin = index++;
+          while (index < name->size())
+          {
+            const auto next = static_cast<unsigned char>((*name)[index]);
+            if (!std::isalnum(next) && (*name)[index] != '_') break;
+            ++index;
+          }
+          const std::string identifier = name->substr(begin, index - begin);
+          if (const auto found = bindings.find(identifier); found != bindings.end()) rewritten += found->second;
+          else rewritten += identifier;
+        }
+        *name = std::move(rewritten);
       }
 
       auto is_local(const std::string &name) const -> bool

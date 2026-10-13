@@ -129,7 +129,9 @@ virtual function templates.
 selective imports and exported namespace members into one checked compilation unit. Dependency-private
 top-level names receive deterministic module-qualified identities, imported
 aliases point to exported identities, and dependency declarations are emitted
-before their consumers. The module demo compiles and executes the resulting
+before their consumers. Type identities are preserved recursively through
+nested generic annotations in exported fields, constructors, parameters, and
+results. The module demo compiles and executes the resulting
 C++ translation.
 `--emit-cpp-package` starts from a strict package manifest, maps qualified
 module names to nested files under its source root, and uses the same linking
