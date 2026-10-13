@@ -85,6 +85,13 @@ fi
 
 echo "Compound-assignment error demo failed as expected."
 
+if bin/sagan --ast tests/fixtures/syntax/operator_method_arity_error.sagan; then
+  echo "Expected operator_method_arity_error.sagan to produce a syntax error." >&2
+  exit 1
+fi
+
+echo "Operator-method arity error failed as expected."
+
 if bin/sagan --ast tests/fixtures/syntax/documentation_error.sagan; then
   echo "Expected tests/fixtures/syntax/documentation_error.sagan to produce a syntax error." >&2
   exit 1

@@ -76,18 +76,20 @@ parameter := identifier (":" type)? ("=" expression)?
 test_declaration := "test" nonempty_quoted_string block
 function_body := block | "=>" expression
 lambda := "fun" "(" parameters? ")" (":" type)? "=>" expression
-method_signature := "fun" identifier "(" parameters? ")" (":" type)?
+operator_method_name := "+" | "-" | "+=" | "-="
+method_name := identifier | operator_method_name
+method_signature := "fun" method_name "(" parameters? ")" (":" type)?
 face_declaration := "face" identifier generic_parameters? composition? "{" face_member* "}"
 face_member := "let" "."? identifier ":" type
              | "const" "."? constant_identifier ":" type
-             | "fun" "."? identifier "(" parameters? ")" (":" type)? function_body?
+             | "fun" "."? method_name "(" parameters? ")" (":" type)? function_body?
 class_declaration := "class" identifier generic_parameters?
                      (class_inheritance ("," class_faces)? | class_faces)?
                      "{" class_member* "}"
 class_member := "weak"? "let" "."? identifier (":" type)? ("=" expression)?
               | "const" "."? constant_identifier ":" type "=" expression
               | constructor_declaration
-              | "fun" "."? identifier generic_parameters? "(" parameters? ")" (":" type)? function_body
+              | "fun" "."? method_name generic_parameters? "(" parameters? ")" (":" type)? function_body
 constructor_declaration := "new" "(" parameters? ")" parent_initializers? block
 parent_initializers := "is" parent_initializer ("," parent_initializer)*
 parent_initializer := identifier "(" arguments? ")"

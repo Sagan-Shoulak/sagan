@@ -708,6 +708,14 @@ namespace codegen
         }
         if (const auto *binary = dynamic_cast<const parser::binary_expression *>(&value))
         {
+          if (binary->operator_text == "+" || binary->operator_text == "-")
+          {
+            const std::string left_type = expression_type(*binary->left);
+            const std::string left_base = left_type.substr(0, left_type.find('<'));
+            if (class_types.contains(left_base) || face_types.contains(left_base))
+              return expression(*binary->left) + "->" + identifier(binary->operator_text) + "(" +
+                     expression(*binary->right) + ")";
+          }
           if (binary->operator_text == "in")
           {
             const std::string key_type =
@@ -1268,7 +1276,13 @@ namespace codegen
         else if (const auto *assignment = dynamic_cast<const parser::assignment_statement *>(&value))
         {
           const auto refresh = debug_array_root(*assignment->target);
-          if (assignment->operation == "^=")
+          const std::string target_type = expression_type(*assignment->target);
+          const std::string target_base = target_type.substr(0, target_type.find('<'));
+          if ((assignment->operation == "+=" || assignment->operation == "-=") &&
+              (class_types.contains(target_base) || face_types.contains(target_base)))
+            output << expression(*assignment->target) << "->" << identifier(assignment->operation) << "("
+                   << expression(*assignment->value) << ");\n";
+          else if (assignment->operation == "^=")
             output << "sagan_power_assign<" << type_name(expression_type(*assignment->target), assignment->range)
                    << ">(" << expression(*assignment->target) << ", " << expression(*assignment->value) << ");\n";
           else if (assignment->operation != "=")

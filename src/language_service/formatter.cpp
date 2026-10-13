@@ -136,6 +136,8 @@ namespace sagan::language_service
           right == tokens::SAFE_DOT) return "";
       if (right == tokens::LPAREN &&
           (left == tokens::IDENTIFIER || left == tokens::METHOD_IDENTIFIER ||
+           left == tokens::PLUS || left == tokens::MINUS ||
+           left == tokens::PLUS_EQUAL || left == tokens::MINUS_EQUAL ||
            left == tokens::RPAREN || left == tokens::RBRACKET)) return "";
       if ((left == tokens::PLUS || left == tokens::MINUS) && ends_expression(prior)) return " ";
       if (right == tokens::PLUS || right == tokens::MINUS)

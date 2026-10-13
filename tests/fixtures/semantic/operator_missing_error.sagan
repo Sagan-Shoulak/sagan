@@ -1,0 +1,5 @@
+class Bundle {
+  let mass: Int = 0
+}
+
+let invalid = Bundle() + Bundle()

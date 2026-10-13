@@ -384,9 +384,12 @@ namespace parser
   {
     const token &keyword = previous();
     const bool private_member = allow_private && match(tokens::DOT);
-    const token &name = allow_mutating && match(tokens::METHOD_IDENTIFIER)
+    const bool operator_name = allow_mutating &&
+        (match(tokens::PLUS) || match(tokens::MINUS) ||
+         match(tokens::PLUS_EQUAL) || match(tokens::MINUS_EQUAL));
+    const token &name = operator_name || (allow_mutating && match(tokens::METHOD_IDENTIFIER))
                             ? previous()
-                            : expect(tokens::IDENTIFIER, "a function name after 'fun'");
+                            : expect(tokens::IDENTIFIER, "a function or operator name after 'fun'");
     std::vector<std::string> type_parameters;
     std::vector<std::optional<std::string>> type_constraints;
     if (match(tokens::LANGLE))
@@ -402,6 +405,8 @@ namespace parser
     }
     if (!type_parameters.empty() && body_optional)
       throw parse_error("Generic face methods are not supported", name.range);
+    if (operator_name && !type_parameters.empty())
+      throw parse_error("Operator methods cannot declare generic type parameters", name.range);
     expect(tokens::LPAREN, "'(' after the function name");
     std::vector<function_parameter> parameters;
     while (!check(tokens::RPAREN))
@@ -421,6 +426,8 @@ namespace parser
       }
     }
     expect(tokens::RPAREN, "')' after the function parameters");
+    if (operator_name && parameters.size() != 1)
+      throw parse_error("An operator method requires exactly one parameter", name.range);
     std::optional<std::string> return_type;
     if (match(tokens::COLON))
     {
