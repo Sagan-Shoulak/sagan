@@ -2242,6 +2242,14 @@ namespace semantic
             }
           }
           const std::string target = expression(*member->target);
+          if (const auto types = dictionary_types(target))
+          {
+            require(!member->safe, "Safe member access is not defined for dictionaries", value.range);
+            require(types->first == "String",
+                    "Dictionary dot access requires String keys, but received " + types->first,
+                    member->target->range);
+            return record(value, types->second);
+          }
           if (!member->safe)
             if (const auto builtin = integer_builtin_member(target, member->member_name))
             {

@@ -75,6 +75,22 @@ auto main() -> int
                                                  spacing_preview.documents.front().text);
   require(language_service::format_document(spacing_again).edits.documents.front().edits.empty(),
           "spacing formatter was not idempotent");
+  const source::document_snapshot dictionary_shorthand(
+      {{source::document_id{133}, source::document_uri{"untitled:dictionary-shorthand"}, {}}, 1,
+       "let values={test:123}\nprint(values.test)\n"});
+  const auto dictionary_shorthand_edits = language_service::format_document(dictionary_shorthand);
+  const auto dictionary_shorthand_preview = language_service::preview_edits(
+      dictionary_shorthand_edits.edits, {&dictionary_shorthand});
+  require(dictionary_shorthand_edits.state == language_service::edit_state::ready &&
+              dictionary_shorthand_preview.state == language_service::edit_state::ready &&
+              dictionary_shorthand_preview.documents.front().text ==
+                  "let values = {test: 123}\nprint(values.test)\n",
+          "formatter did not preserve dictionary shorthand keys and dot access");
+  const source::document_snapshot dictionary_shorthand_again(
+      dictionary_shorthand.identity(), 2, dictionary_shorthand_preview.documents.front().text);
+  require(language_service::format_document(dictionary_shorthand_again)
+              .edits.documents.front().edits.empty(),
+          "dictionary shorthand formatting was not idempotent");
   const source::document_snapshot private_members(
       {{source::document_id{132}, source::document_uri{"untitled:private-members"}, {}}, 1,
        "class Counter {\nlet .value:Int=0\nconst .LIMIT:Int=42\nfun .read():Int=>self.value\n}\n"});

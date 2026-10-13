@@ -950,6 +950,10 @@ namespace codegen
         }
         if (const auto *member = dynamic_cast<const parser::member_expression *>(&value))
         {
+          const std::string target_type = expression_type(*member->target);
+          if (std::string_view{target_type}.starts_with("Dictionary<"))
+            return "sagan_dictionary_at(" + expression(*member->target) + ", std::string{" +
+                   escaped_string(member->member_name) + "})";
           if (const auto *target = dynamic_cast<const parser::identifier_expression *>(member->target.get());
               target && target->name == "RuntimeError")
             return "sagan_runtime_error::" + member->member_name;
@@ -975,7 +979,6 @@ namespace codegen
             if (payload_enums.contains(base)) return enum_factory(base, member->member_name) + "()";
             return identifier(base) + "::" + identifier(member->member_name);
           }
-          const std::string target_type = expression_type(*member->target);
           if (member->member_name == "times" &&
               (target_type == "Int" || target_type == "Int8" || target_type == "Int16" ||
                target_type == "Int32" || target_type == "Int64"))

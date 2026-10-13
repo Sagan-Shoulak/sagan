@@ -1,6 +1,6 @@
 ---
 title: Expressions
-status: work-in-progress
+status: review-needed
 publication_ready: false
 verified_in: null
 verified_on: null
@@ -165,15 +165,26 @@ The parser implements four collection forms:
 
 ```sagan
 let values = [1, 2, ...additional_values,]
-let metadata = {"name": "Voyager", active_key: true, ...defaults,}
+let active_key = "active"
+let metadata = {name: "Voyager", (active_key): true, ...defaults,}
+print(metadata.name)
 let direction = <1.0, 0.0, 0.0,>
 let position = (100.0, 200.0, 300.0,)
 let radial_direction = s<2.0, 0.5, 1.0>
 let radial_position = s(100.0, 0.5, 1.0)
 ```
 
-Arrays and dictionaries may be empty. Dictionary keys accept any expression;
-semantic analysis will determine whether a key's type is hashable.
+Arrays and dictionaries may be empty. An unquoted identifier before `:` in a
+dictionary literal is a static string key, so `{name: "Voyager"}` is shorthand
+for `{"name": "Voyager"}`. Parenthesize an identifier or another expression
+when its evaluated value should be the key, as in `{(active_key): true}`.
+Dictionary keys otherwise accept any expression; semantic analysis determines
+whether a key's type is hashable.
+
+String-keyed dictionaries support equivalent bracket and dot reads:
+`metadata.name` means `metadata["name"]`. Dot access uses the same checked
+lookup, assignment, and `RuntimeError.missing_key` behavior as brackets.
+Dictionaries with another key type require bracket access.
 An integer's `.times` property eagerly constructs an `Array<Int>` containing
 the zero-based indices below that integer: `5.times` is `[0, 1, 2, 3, 4]`,
 and `0.times` is `[]`. A negative count raises `RuntimeError.invalid_range`.

@@ -820,7 +820,7 @@ namespace
         "    Dictionary\n");
     passed &= expect_ast(
         "dictionary expression keys and spread",
-        "let metadata = {\"name\": \"Voyager\", active_key: true, ...defaults,}\n",
+        "let metadata = {\"name\": \"Voyager\", (active_key): true, ...defaults,}\n",
         "Program\n"
         "  Let(metadata)\n"
         "    Dictionary\n"
@@ -830,7 +830,8 @@ namespace
         "        String\n"
         "          Text(\"Voyager\")\n"
         "      Entry\n"
-        "        Identifier(active_key)\n"
+        "        Group\n"
+        "          Identifier(active_key)\n"
         "        Bool(true)\n"
         "      Spread\n"
         "        Identifier(defaults)\n");

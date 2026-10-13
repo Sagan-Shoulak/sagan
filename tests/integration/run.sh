@@ -16,6 +16,7 @@ tests=(
   native_declaration_test.sh
   codegen_test.sh
   runtime_test.sh
+  dictionary_shorthand_test.sh
   optional_test.sh
   payload_enum_test.sh
   generic_sum_test.sh
