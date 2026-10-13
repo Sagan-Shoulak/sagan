@@ -77,3 +77,24 @@ if bin/sagan --types tests/fixtures/semantic/type_return_error.sagan; then
 fi
 
 echo "Missing-return demo failed as expected."
+
+if bin/sagan --types tests/fixtures/semantic/operator_missing_error.sagan; then
+  echo "Expected a missing operator overload to fail." >&2
+  exit 1
+fi
+
+echo "Missing operator overload failed as expected."
+
+if bin/sagan --types tests/fixtures/semantic/operator_compound_return_error.sagan; then
+  echo "Expected a non-Void compound operator overload to fail." >&2
+  exit 1
+fi
+
+echo "Invalid compound operator return failed as expected."
+
+if bin/sagan --types tests/fixtures/semantic/operator_ambiguity_error.sagan; then
+  echo "Expected ambiguous operator overloads to fail." >&2
+  exit 1
+fi
+
+echo "Ambiguous operator overload failed as expected."

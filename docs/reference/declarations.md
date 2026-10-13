@@ -156,6 +156,17 @@ require an explicit class override. Defaults may call other requirements from
 their own face through `self`.
 Face composition is transitive: inherited requirements and defaults flow into
 the composing face and ultimately into its classes. Cycles are rejected.
+
+Class and face methods may use `+`, `-`, `+=`, or `-=` as their names. An
+operator method has exactly one explicit parameter: the right operand. Binary
+expressions dispatch on the left operand through the exact `+` or `-` method
+and produce that method's declared result. Compound assignment dispatches
+directly through the exact `+=` or `-=` method; it does not lower to a binary
+operation followed by assignment. Compound operator methods mutate their
+receiver and must explicitly declare a `Void` return. Operator methods cannot declare
+method-specific generic parameters. Existing built-in numeric, measured,
+vector, and point operations keep their predefined behavior.
+
 Face names may be used as value, parameter, and return annotations. A class
 value converts to a face only when its declaration explicitly conforms through
 `has`, including transitive face composition. Calls through the face

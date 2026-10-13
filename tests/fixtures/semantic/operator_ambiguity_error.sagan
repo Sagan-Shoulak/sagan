@@ -1,0 +1,6 @@
+class Bundle {
+  fun +(other: Int): Bundle => self
+  fun +(other: Int64): Bundle => self
+}
+
+let invalid = Bundle() + 1

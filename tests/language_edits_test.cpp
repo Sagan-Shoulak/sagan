@@ -107,6 +107,24 @@ auto main() -> int
   require(language_service::format_document(dictionary_membership_again)
               .edits.documents.front().edits.empty(),
           "dictionary membership formatting was not idempotent");
+  const source::document_snapshot operator_methods(
+      {{source::document_id{135}, source::document_uri{"untitled:operator-methods"}, {}}, 1,
+       "class Bundle{\nfun +(other:Bundle):Bundle=>self\nfun +=(other:Bundle):Void{return}\n}\n"});
+  const auto operator_method_edits = language_service::format_document(operator_methods);
+  const auto operator_method_preview = language_service::preview_edits(
+      operator_method_edits.edits, {&operator_methods});
+  require(operator_method_edits.state == language_service::edit_state::ready &&
+              operator_method_preview.state == language_service::edit_state::ready &&
+              operator_method_preview.documents.front().text ==
+                  "class Bundle {\n"
+                  "  fun +(other: Bundle): Bundle => self\n"
+                  "  fun +=(other: Bundle): Void {return}\n"
+                  "}\n",
+          "formatter did not preserve operator method names and canonical spacing");
+  const source::document_snapshot operator_methods_again(
+      operator_methods.identity(), 2, operator_method_preview.documents.front().text);
+  require(language_service::format_document(operator_methods_again).edits.documents.front().edits.empty(),
+          "operator-method formatting was not idempotent");
   const source::document_snapshot private_members(
       {{source::document_id{132}, source::document_uri{"untitled:private-members"}, {}}, 1,
        "class Counter {\nlet .value:Int=0\nconst .LIMIT:Int=42\nfun .read():Int=>self.value\n}\n"});

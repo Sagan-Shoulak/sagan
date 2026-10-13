@@ -1,0 +1,6 @@
+class Bundle {
+  fun +=(other: Bundle): Bundle => self
+}
+
+let value = Bundle()
+value += Bundle()

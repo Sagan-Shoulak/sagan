@@ -690,6 +690,40 @@ namespace semantic
                            const parser::span range) const -> std::string
       {
         if (is_unknown(left) || is_unknown(right)) return std::string(unknown_type);
+        const auto resolve_operator = [&](const auto &owner, const generic_type &instance)
+            -> std::optional<std::string>
+        {
+          const auto methods = owner.methods.find(operation);
+          if (methods == owner.methods.end()) return {};
+          std::vector<std::string> results;
+          for (auto candidate : methods->second)
+          {
+            if (!accepts_arguments(candidate, 1)) continue;
+            for (auto &parameter : candidate.parameters)
+              parameter = substitute_type(parameter, owner.type_parameters, instance.arguments);
+            candidate.result = substitute_type(candidate.result, owner.type_parameters, instance.arguments);
+            if (compatible(candidate.parameters.front(), right)) results.push_back(std::move(candidate.result));
+          }
+          require(!results.empty(), "No matching operator '" + operation + "' for " + left + " and " + right,
+                  range);
+          require(results.size() == 1, "Ambiguous operator '" + operation + "' for " + left + " and " + right,
+                  range);
+          return results.front();
+        };
+        if (operation == "+" || operation == "-" || operation == "+=" || operation == "-=")
+        {
+          const auto left_instance = generic_instance(left);
+          if (const auto object = objects.find(left_instance.base); object != objects.end())
+          {
+            if (const auto result = resolve_operator(object->second, left_instance)) return *result;
+            require(false, "Type '" + left + "' has no operator method '" + operation + "'", range);
+          }
+          if (const auto interface = interfaces.find(left_instance.base); interface != interfaces.end())
+          {
+            if (const auto result = resolve_operator(interface->second, left_instance)) return *result;
+            require(false, "Face '" + left + "' has no operator method '" + operation + "'", range);
+          }
+        }
         const auto left_measured = units::parse_measured_type(left, unit_registry, range);
         const auto right_measured = units::parse_measured_type(right, unit_registry, range);
         if ((left_measured || right_measured) && !dimensioned(left) && !dimensioned(right))
@@ -2989,9 +3023,21 @@ namespace semantic
           const std::string assigned = expression(*assignment->value);
           if (assignment->operation != "=")
           {
-            const std::string result = arithmetic_type(assignment->operation.substr(0, 1), target, assigned,
-                                                       assignment->range);
-            require_compatible(target, result, assignment->range, "Compound assignment");
+            const auto target_instance = generic_instance(target);
+            if ((assignment->operation == "+=" || assignment->operation == "-=") &&
+                (objects.contains(target_instance.base) || interfaces.contains(target_instance.base)))
+            {
+              const std::string result = arithmetic_type(assignment->operation, target, assigned,
+                                                         assignment->range);
+              require(result == "Void", "Compound operator method '" + assignment->operation +
+                      "' must return Void, but returns " + result, assignment->range);
+            }
+            else
+            {
+              const std::string result = arithmetic_type(assignment->operation.substr(0, 1), target, assigned,
+                                                         assignment->range);
+              require_compatible(target, result, assignment->range, "Compound assignment");
+            }
           }
           else require_compatible(target, assigned, assignment->range, "Assignment");
           mark_initialized(*assignment->target);

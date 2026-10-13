@@ -1,0 +1,38 @@
+class ResourceBundle {
+  let mass: Int
+
+  new(mass: Int) {
+    self.mass = mass
+  }
+
+  fun +(other: ResourceBundle): ResourceBundle => ResourceBundle(self.mass + other.mass)
+  fun -(other: ResourceBundle): ResourceBundle => ResourceBundle(self.mass - other.mass)
+
+  fun +=(other: ResourceBundle): Void {
+    self.mass += other.mass
+  }
+
+  fun -=(other: ResourceBundle): Void {
+    self.mass -= other.mass
+  }
+
+  fun current(): Int => self.mass
+}
+
+fun main(): Int {
+  let stored = ResourceBundle(10)
+  let delivery = ResourceBundle(3)
+  let sum = stored + delivery
+  let difference = stored - delivery
+
+  stored += delivery
+  stored -= ResourceBundle(1)
+
+  if sum.current() == 13 and difference.current() == 7 and stored.current() == 12 {
+    print("operator methods passed")
+    return 0
+  }
+  return 1
+}
+
+exit(main())
