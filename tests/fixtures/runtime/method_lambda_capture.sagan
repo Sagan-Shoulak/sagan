@@ -1,0 +1,63 @@
+enum MassiveResource {
+  iron
+  aluminum
+  titanium
+}
+
+class ResourceBundle {
+  let storedCharge: Int
+  let massiveResources: Dictionary<MassiveResource, Int8>
+
+  new(storedCharge: Int, massiveResources: Dictionary<MassiveResource, Int8>) {
+    self.storedCharge = storedCharge
+    self.massiveResources = massiveResources
+  }
+
+  fun canAfford(other: ResourceBundle): Bool =>
+    self.storedCharge >= other.storedCharge and MassiveResource.all(
+      fun(resource: MassiveResource): Bool =>
+        self.massiveResources[resource] >= other.massiveResources[resource]
+    )
+}
+
+class Probe {
+  let value: Int
+
+  new(value: Int) {
+    self.value = value
+  }
+
+  fun incrementer(): () => Int => fun(): Int => self.value := self.value + 1
+}
+
+fun escapingIncrementer(): () => Int {
+  let probe = Probe(40)
+  return probe.incrementer()
+}
+
+fun main(): Int {
+  let available = ResourceBundle(20, {
+    (MassiveResource.iron): 12,
+    (MassiveResource.aluminum): 8,
+    (MassiveResource.titanium): 3
+  })
+  let affordable = ResourceBundle(15, {
+    (MassiveResource.iron): 10,
+    (MassiveResource.aluminum): 8,
+    (MassiveResource.titanium): 2
+  })
+  let tooExpensive = ResourceBundle(15, {
+    (MassiveResource.iron): 13,
+    (MassiveResource.aluminum): 8,
+    (MassiveResource.titanium): 2
+  })
+  assert(available.canAfford(affordable))
+  assert(!available.canAfford(tooExpensive))
+
+  let increment = escapingIncrementer()
+  assert(increment() == 41)
+  assert(increment() == 42)
+  return 0
+}
+
+exit(main())

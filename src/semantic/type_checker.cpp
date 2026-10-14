@@ -2557,8 +2557,6 @@ namespace semantic
         }
         if (const auto *lambda = dynamic_cast<const parser::lambda_expression *>(&value))
         {
-          require(!expression_contains_name(*lambda->body, "self"),
-                  "Capturing 'self' in a lambda is not available in Sagan 1.0", value.range);
           require(!expression_contains_name(*lambda->body, "super"),
                   "Capturing 'super' in a lambda is not available", value.range);
           callable_signature signature;

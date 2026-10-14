@@ -213,6 +213,13 @@ cases, so `MassiveResource.all(fun(resource: MassiveResource): Bool =>
 available[resource] >= required[resource])` checks every resource directly.
 Enums with payload cases are not direct sequences.
 
+Lambdas use lexical capture. Local variables and parameters keep their existing
+shared binding behavior, while `self` retains the same class instance and keeps
+that instance alive if the closure escapes the method. This allows predicates
+inside methods to read or update instance state without copying the object.
+`super` remains unavailable inside lambdas because parent implementation
+selection is tied to the immediately executing method body.
+
 Cartesian vectors and points require at least two elements, so `<>`, `<1>`, and `(1,)`
 are syntax errors. `(value)` remains a grouped expression. Spherical vectors
 and points require exactly three components in the order shown. The `s` must be

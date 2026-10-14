@@ -19,6 +19,54 @@ namespace codegen
 {
   namespace
   {
+    auto expression_contains_name(const parser::expression &value, const std::string_view name) -> bool
+    {
+      if (const auto *identifier = dynamic_cast<const parser::identifier_expression *>(&value))
+        return identifier->name == name;
+      if (const auto *measured = dynamic_cast<const parser::measured_expression *>(&value))
+        return expression_contains_name(*measured->value, name);
+      if (const auto *grouping = dynamic_cast<const parser::grouping_expression *>(&value))
+        return expression_contains_name(*grouping->value, name);
+      if (const auto *unary = dynamic_cast<const parser::unary_expression *>(&value))
+        return expression_contains_name(*unary->operand, name);
+      if (const auto *binary = dynamic_cast<const parser::binary_expression *>(&value))
+        return expression_contains_name(*binary->left, name) || expression_contains_name(*binary->right, name);
+      if (const auto *conditional = dynamic_cast<const parser::conditional_expression *>(&value))
+        return expression_contains_name(*conditional->condition, name) ||
+               expression_contains_name(*conditional->when_true, name) ||
+               expression_contains_name(*conditional->when_false, name);
+      if (const auto *assignment = dynamic_cast<const parser::assignment_expression *>(&value))
+        return expression_contains_name(*assignment->target, name) ||
+               expression_contains_name(*assignment->value, name);
+      if (const auto *call = dynamic_cast<const parser::call_expression *>(&value))
+      {
+        if (expression_contains_name(*call->callee, name)) return true;
+        return std::any_of(call->arguments.begin(), call->arguments.end(), [&](const auto &argument)
+        { return expression_contains_name(*argument, name); });
+      }
+      if (const auto *index = dynamic_cast<const parser::index_expression *>(&value))
+        return expression_contains_name(*index->target, name) || expression_contains_name(*index->index, name);
+      if (const auto *member = dynamic_cast<const parser::member_expression *>(&value))
+        return expression_contains_name(*member->target, name);
+      if (const auto *string = dynamic_cast<const parser::string_expression *>(&value))
+        return std::any_of(string->parts.begin(), string->parts.end(), [&](const auto &part)
+        { return part.interpolation && expression_contains_name(*part.interpolation, name); });
+      if (const auto *spread = dynamic_cast<const parser::spread_expression *>(&value))
+        return expression_contains_name(*spread->value, name);
+      if (const auto *collection = dynamic_cast<const parser::collection_expression *>(&value))
+        return std::any_of(collection->elements.begin(), collection->elements.end(), [&](const auto &element)
+        { return expression_contains_name(*element, name); });
+      if (const auto *dictionary = dynamic_cast<const parser::dictionary_expression *>(&value))
+        return std::any_of(dictionary->entries.begin(), dictionary->entries.end(), [&](const auto &entry)
+        {
+          return (entry.key && expression_contains_name(*entry.key, name)) ||
+                 expression_contains_name(*entry.value, name);
+        });
+      if (const auto *lambda = dynamic_cast<const parser::lambda_expression *>(&value))
+        return expression_contains_name(*lambda->body, name);
+      return false;
+    }
+
     class cpp_generator
     {
       const semantic::type_model &types;
@@ -51,6 +99,7 @@ namespace codegen
       bool in_parent_initializer = false;
       bool in_method = false;
       std::string active_class_name;
+      bool captured_self = false;
       bool map_enabled = false;
       std::optional<std::filesystem::path> default_source;
       std::optional<std::string> selected_test;
@@ -177,6 +226,7 @@ namespace codegen
 
       auto identifier(const std::string &name) const -> std::string
       {
+        if (name == "self" && captured_self) return "(*sagan_self_capture)";
         if (name == "self" && in_method) return "(*this)";
         return generated_identifier(name);
       }
@@ -1186,7 +1236,14 @@ namespace codegen
         }
         if (const auto *lambda = dynamic_cast<const parser::lambda_expression *>(&value))
         {
-          std::string result = "[=](";
+          const bool captures_self = in_method && expression_contains_name(*lambda->body, "self");
+          const bool introduces_self_capture = captures_self && !captured_self;
+          std::string result = introduces_self_capture
+              ? "[=, sagan_self_capture = std::shared_ptr<" + identifier(active_class_name) +
+                ">(this->shared_from_this(), this)]("
+              : "[=](";
+          const bool previous_captured_self = captured_self;
+          captured_self = captured_self || captures_self;
           open_boxed_scope();
           for (std::size_t index = 0; index < lambda->parameters.size(); ++index)
           {
@@ -1208,6 +1265,7 @@ namespace codegen
                       type(parameter.type_name, value.range) + ">(" + identifier(parameter.name) + "_value); ";
           result += "return " + converted_expression(*lambda->body, result_type) + "; }";
           close_boxed_scope();
+          captured_self = previous_captured_self;
           return result;
         }
         fail("expression is not available in the initial native subset", value.range);
@@ -1948,10 +2006,10 @@ namespace codegen
           }
           output << ">\n";
         }
-        output << "struct " << identifier(value.name);
+        output << "struct " << identifier(value.name) << " : public virtual std::enable_shared_from_this<void>";
         if (!value.base_classes.empty() || !value.composed_interfaces.empty())
         {
-          output << " : ";
+          output << ", ";
           for (std::size_t index = 0; index < value.base_classes.size(); ++index)
           {
             if (index != 0) output << ", ";

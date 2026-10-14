@@ -1761,11 +1761,11 @@ namespace
         "fun exercise(): Int {\n  let transform: (Int) => Int = increment\n"
         "  let same = preserve(transform)\n  return same(41)\n}\n",
         {"transform: (Int64) => Int64", "same: (Int64) => Int64"});
-    passed &= expect_type_error(
-        "lambda self capture is rejected safely",
+    passed &= expect_type_model(
+        "lambda self capture is accepted",
         "class Counter {\n  let value: Int = 0\n"
         "  fun reader(): () => Int => fun(): Int => self.value\n}\n",
-        "Capturing 'self' in a lambda is not available in Sagan 1.0");
+        {});
     passed &= expect_type_model(
         "default class construction fields self and methods",
         "face Countable {\n  fun increment!(): Int\n  fun current(): Int\n}\n"
