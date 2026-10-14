@@ -107,6 +107,35 @@ auto main() -> int
   require(language_service::format_document(dictionary_membership_again)
               .edits.documents.front().edits.empty(),
           "dictionary membership formatting was not idempotent");
+  const source::document_snapshot method_lambda_capture(
+      {{source::document_id{136}, source::document_uri{"untitled:method-lambda-capture"}, {}}, 1,
+       "class Probe{\n"
+       "let value:Int\n"
+       "new(value:Int){self.value=value}\n"
+       "fun matches(other:Probe):Bool=>[1].all(fun(item:Int):Bool=>self.value==other.value)\n"
+       "}\n"});
+  const auto method_lambda_capture_edits = language_service::format_document(method_lambda_capture);
+  const auto method_lambda_capture_preview = language_service::preview_edits(
+      method_lambda_capture_edits.edits, {&method_lambda_capture});
+  require(method_lambda_capture_edits.state == language_service::edit_state::ready &&
+              method_lambda_capture_preview.state == language_service::edit_state::ready &&
+              method_lambda_capture_preview.documents.front().text ==
+                  "class Probe {\n"
+                  "  let value: Int\n"
+                  "  new(value: Int) {self.value = value}\n"
+                  "  fun matches(other: Probe): Bool => [1].all(fun(item: Int): Bool => "
+                  "self.value == other.value)\n"
+                  "}\n",
+          "formatter did not preserve method-lambda self and parameter captures");
+  const source::document_snapshot method_lambda_capture_again(
+      method_lambda_capture.identity(), 2, method_lambda_capture_preview.documents.front().text);
+  require(language_service::format_document(method_lambda_capture_again)
+              .edits.documents.front().edits.empty(),
+          "method-lambda capture formatting was not idempotent");
+  const auto indexed_method_lambda_capture = language_service::index_document(
+      method_lambda_capture_again);
+  require(indexed_method_lambda_capture.value.has_value(),
+          "language service did not index method-lambda self and parameter captures");
   const source::document_snapshot operator_methods(
       {{source::document_id{135}, source::document_uri{"untitled:operator-methods"}, {}}, 1,
        "class Bundle{\nfun +(other:Bundle):Bundle=>self\nfun +=(other:Bundle):Void{return}\n}\n"});

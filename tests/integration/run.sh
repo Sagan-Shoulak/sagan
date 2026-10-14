@@ -31,6 +31,7 @@ tests=(
   solar_lagrange_numeric_test.sh
   array_times_parallel_test.sh
   array_enum_predicates_test.sh
+  method_lambda_capture_test.sh
   parallel_let_fibonacci_test.sh
   mixed_exponent_test.sh
   time_support_test.sh
